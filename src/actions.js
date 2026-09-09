@@ -1876,7 +1876,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 				{
 					type: 'dropdown',
@@ -1931,7 +1931,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -1966,7 +1966,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2001,7 +2001,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2036,7 +2036,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2071,7 +2071,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2106,7 +2106,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2141,7 +2141,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 				{
 					type: 'number',
@@ -2189,7 +2189,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2224,7 +2224,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2259,7 +2259,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2294,7 +2294,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2329,7 +2329,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2364,7 +2364,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 				{
 					type: 'dropdown',
@@ -2411,7 +2411,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2446,7 +2446,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 			],
 			callback: function (action, _bank) {
@@ -2481,7 +2481,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 				{
 					type: 'dropdown',
@@ -2527,7 +2527,7 @@ module.exports = {
 					id: 'camera',
 					default: self.CHOICES_CAMERAS[0].id,
 					choices: self.CHOICES_CAMERAS,
-					isVisible: (options) => options.useSelected === false,
+					isVisibleExpression: 'options.useSelected === false',
 				},
 				{
 					type: 'dropdown',

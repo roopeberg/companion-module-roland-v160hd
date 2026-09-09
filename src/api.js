@@ -542,7 +542,7 @@ module.exports = {
 		let self = this
 
 		let cmd = 'DTH:' + address + ',' + value + ';'
-		self.log('info', 'Sending command: ' + cmd)
+		self.logVerbose('Sending command: ' + cmd)
 		self.sendRawCommand(cmd)
 	},
 

@@ -132,7 +132,8 @@ module.exports = {
 		self.getOutputData()
 		self.getAuxLinkData()
 
-		self.getMemoryNames()
+		// Memory names polled once at init, not every interval (240 RQH commands is too heavy)
+		// self.getMemoryNames()
 		self.getLastMemoryLoaded()
 	},
 
@@ -247,6 +248,7 @@ module.exports = {
 			self.sendRawCommand('VER') //request version info
 			self.startInterval() //request some states
 			self.subscribeToTally() //request tally changes
+			self.getMemoryNames() //fetch once at connect, not every poll
 		} else if (data.trim() == 'ERR:0;') {
 			//an error with something that it received
 		} else {

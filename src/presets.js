@@ -1,5 +1,132 @@
+const { combineRgb } = require('@companion-module/base')
+
 module.exports = {
 	initPresets: function () {
-		this.setPresetDefinitions([], {})
+		let self = this
+		let presets = []
+
+		const WHITE = combineRgb(255, 255, 255)
+		const BLACK = combineRgb(0, 0, 0)
+		const RED = combineRgb(204, 0, 0)
+		const GREEN = combineRgb(0, 180, 0)
+		const ORANGE = combineRgb(210, 120, 0)
+		const DARK = combineRgb(30, 30, 30)
+
+		// Source groups
+		const HDMI_SOURCES = Array.from({ length: 8 }, (_, i) => ({
+			label: `HDMI ${i + 1}`,
+			pgmpvw_id: i.toString(16).padStart(2, '0').toUpperCase(),
+			tally_id: i,
+		}))
+
+		const SDI_SOURCES = Array.from({ length: 8 }, (_, i) => ({
+			label: `SDI ${i + 1}`,
+			pgmpvw_id: (8 + i).toString(16).padStart(2, '0').toUpperCase(),
+			tally_id: 8 + i,
+		}))
+
+		const STILL_SOURCES = Array.from({ length: 16 }, (_, i) => ({
+			label: `Still ${i + 1}`,
+			pgmpvw_id: (0x10 + i).toString(16).padStart(2, '0').toUpperCase(),
+			tally_id: null,
+		}))
+
+		const XPT_SOURCES = Array.from({ length: 10 }, (_, i) => ({
+			label: `INPUT ${i + 1}`,
+			pgmpvw_id: (0x20 + i).toString(16).padStart(2, '0').toUpperCase(),
+			tally_id: 32 + i,
+		}))
+
+		const AUX_DESTS = [
+			{ label: 'AUX 1', aux_address: '000011', feedback_aux: 'aux1', color: ORANGE },
+			{ label: 'AUX 2', aux_address: '00002E', feedback_aux: 'aux2', color: ORANGE },
+			{ label: 'AUX 3', aux_address: '00002F', feedback_aux: 'aux3', color: ORANGE },
+		]
+
+		// Build PGM/PVW presets
+		const pgmpvwDests = [
+			{ label: 'PGM', actionId: 'select_pgm', tally_state: 'program', activeColor: RED },
+			{ label: 'PVW', actionId: 'select_pvw', tally_state: 'preview', activeColor: GREEN },
+		]
+
+		const sourceGroups = [
+			{ name: 'HDMI', sources: HDMI_SOURCES },
+			{ name: 'SDI', sources: SDI_SOURCES },
+			{ name: 'Still', sources: STILL_SOURCES },
+			{ name: 'XPT', sources: XPT_SOURCES },
+		]
+
+		for (const dest of pgmpvwDests) {
+			for (const group of sourceGroups) {
+				for (const src of group.sources) {
+					const feedbacks = []
+					if (src.tally_id !== null) {
+						feedbacks.push({
+							feedbackId: 'tally',
+							options: { input: src.tally_id, state: dest.tally_state },
+							style: { color: WHITE, bgcolor: dest.activeColor },
+						})
+					}
+
+					presets.push({
+						category: `${dest.label} - ${group.name}`,
+						name: `${dest.label}: ${src.label}`,
+						type: 'button',
+						style: {
+							text: src.label,
+							size: 'auto',
+							color: WHITE,
+							bgcolor: DARK,
+						},
+						steps: [
+							{
+								down: [{ actionId: dest.actionId, options: { input: src.pgmpvw_id } }],
+								up: [],
+							},
+						],
+						feedbacks,
+					})
+				}
+			}
+		}
+
+		// Build AUX presets
+		for (const aux of AUX_DESTS) {
+			for (const group of sourceGroups) {
+				for (const src of group.sources) {
+					presets.push({
+						category: `${aux.label} - ${group.name}`,
+						name: `${aux.label}: ${src.label}`,
+						type: 'button',
+						style: {
+							text: src.label,
+							size: 'auto',
+							color: WHITE,
+							bgcolor: DARK,
+						},
+						steps: [
+							{
+								down: [
+									{
+										actionId: 'aux_assign',
+										options: { aux: aux.aux_address, assign: src.pgmpvw_id },
+									},
+								],
+								up: [],
+							},
+						],
+						feedbacks: [
+							{
+								feedbackId: 'auxTally',
+								options: { aux: aux.feedback_aux, assign: src.pgmpvw_id },
+								style: { color: WHITE, bgcolor: aux.color },
+							},
+						],
+					})
+				}
+			}
+		}
+
+		self.setPresetDefinitions(presets)
 	},
 }

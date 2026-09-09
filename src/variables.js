@@ -50,6 +50,34 @@ module.exports = {
 
 		variables.freeze = { name: 'Freeze On/Off' }
 
+		// PiP captured settings (populated by Capture PiP action)
+		const pipIds = [
+			{ n: 1, id: '1B' }, { n: 2, id: '1C' }, { n: 3, id: '1D' }, { n: 4, id: '1E' },
+		]
+		for (const p of pipIds) {
+			variables[`pip${p.n}_source`]      = { name: `PiP ${p.n} Captured Source` }
+			variables[`pip${p.n}_type`]        = { name: `PiP ${p.n} Captured Type` }
+			variables[`pip${p.n}_positionH`]   = { name: `PiP ${p.n} Captured Position H (%)` }
+			variables[`pip${p.n}_positionV`]   = { name: `PiP ${p.n} Captured Position V (%)` }
+			variables[`pip${p.n}_size`]        = { name: `PiP ${p.n} Captured Size (%)` }
+			variables[`pip${p.n}_croppingH`]   = { name: `PiP ${p.n} Captured Cropping H (%)` }
+			variables[`pip${p.n}_croppingV`]   = { name: `PiP ${p.n} Captured Cropping V (%)` }
+			variables[`pip${p.n}_shape`]       = { name: `PiP ${p.n} Captured Shape` }
+			variables[`pip${p.n}_borderColor`] = { name: `PiP ${p.n} Captured Border Color` }
+			variables[`pip${p.n}_borderWidth`] = { name: `PiP ${p.n} Captured Border Width` }
+			variables[`pip${p.n}_viewPosH`]    = { name: `PiP ${p.n} Captured View Pos H (%)` }
+			variables[`pip${p.n}_viewPosV`]    = { name: `PiP ${p.n} Captured View Pos V (%)` }
+			variables[`pip${p.n}_zoom`]        = { name: `PiP ${p.n} Captured Zoom (%)` }
+		}
+
+		// DSK captured settings (populated by Capture DSK action)
+		const dskIds = [{ n: 1, id: '1F' }, { n: 2, id: '20' }]
+		for (const d of dskIds) {
+			variables[`dsk${d.n}_keySource`]  = { name: `DSK ${d.n} Captured Key Source` }
+			variables[`dsk${d.n}_fillSource`] = { name: `DSK ${d.n} Captured Fill Source` }
+			variables[`dsk${d.n}_type`]       = { name: `DSK ${d.n} Captured Type` }
+		}
+
 		//memory names
 		for (let i = 1; i <= 30; i++) {
 			variables['memoryname_' + i] = { name: 'Memory Name ' + i }
@@ -207,6 +235,51 @@ module.exports = {
 
 			//Freeze
 			variableObj.freeze = self.DATA.freeze == '01' ? 'On' : 'Off'
+
+			// PiP captured settings
+			const SHAPE_LABELS = { '00': 'Rectangle', '01': 'Circle', '02': 'Diamond' }
+			const BORDER_COLOR_LABELS = {
+				'00': 'White', '01': 'Yellow', '02': 'Cyan', '03': 'Green',
+				'04': 'Magenta', '05': 'Red', '06': 'Blue', '07': 'Black',
+				'08': 'Custom', '09': 'Soft Edge',
+			}
+			const PIP_TYPE_LABELS = {
+				'00': 'PinP', '01': 'Lum-White Key', '02': 'Lum-Black Key', '03': 'Chroma Key',
+			}
+			const pipIds = [
+				{ n: 1, id: '1B' }, { n: 2, id: '1C' }, { n: 3, id: '1D' }, { n: 4, id: '1E' },
+			]
+			for (const p of pipIds) {
+				const d = self.DATA
+				const srcLookup = self.CHOICES_PNPKEY_SOURCES.find((x) => x.id == d[`data_${p.id}02`])
+				variableObj[`pip${p.n}_source`]      = srcLookup ? srcLookup.label : (d[`data_${p.id}02`] ?? '-')
+				variableObj[`pip${p.n}_type`]        = PIP_TYPE_LABELS[d[`data_${p.id}03`]] ?? (d[`data_${p.id}03`] ?? '-')
+				variableObj[`pip${p.n}_positionH`]   = self.parseBytes(d[`data_${p.id}04`], 10, true)  ?? '-'
+				variableObj[`pip${p.n}_positionV`]   = self.parseBytes(d[`data_${p.id}06`], 10, true)  ?? '-'
+				variableObj[`pip${p.n}_size`]        = self.parseBytes(d[`data_${p.id}08`], 10, false) ?? '-'
+				variableObj[`pip${p.n}_croppingH`]   = self.parseBytes(d[`data_${p.id}0A`], 10, false) ?? '-'
+				variableObj[`pip${p.n}_croppingV`]   = self.parseBytes(d[`data_${p.id}0C`], 10, false) ?? '-'
+				variableObj[`pip${p.n}_shape`]       = SHAPE_LABELS[d[`data_${p.id}0E`]]       ?? (d[`data_${p.id}0E`]  ?? '-')
+				variableObj[`pip${p.n}_borderColor`] = BORDER_COLOR_LABELS[d[`data_${p.id}0F`]] ?? (d[`data_${p.id}0F`] ?? '-')
+				variableObj[`pip${p.n}_borderWidth`] = d[`data_${p.id}10`] !== undefined ? parseInt(d[`data_${p.id}10`], 16) : '-'
+				variableObj[`pip${p.n}_viewPosH`]    = self.parseBytes(d[`data_${p.id}11`], 10, true)  ?? '-'
+				variableObj[`pip${p.n}_viewPosV`]    = self.parseBytes(d[`data_${p.id}13`], 10, true)  ?? '-'
+				variableObj[`pip${p.n}_zoom`]        = self.parseBytes(d[`data_${p.id}15`], 1,  false) ?? '-'
+			}
+
+			// DSK captured settings
+			const DSK_TYPE_LABELS = {
+				'00': 'Lum-White', '01': 'Lum-Black', '02': 'Chroma',
+			}
+			const dskIds = [{ n: 1, id: '1F' }, { n: 2, id: '20' }]
+			for (const dk of dskIds) {
+				const d = self.DATA
+				const keySrcLookup  = self.CHOICES_INPUTSASSIGN.find((x) => x.id == parseInt(d[`data_${dk.id}03`], 16))
+				const fillSrcLookup = self.CHOICES_INPUTSASSIGN.find((x) => x.id == parseInt(d[`data_${dk.id}04`], 16))
+				variableObj[`dsk${dk.n}_keySource`]  = keySrcLookup  ? keySrcLookup.label  : (d[`data_${dk.id}03`] ?? '-')
+				variableObj[`dsk${dk.n}_fillSource`] = fillSrcLookup ? fillSrcLookup.label : (d[`data_${dk.id}04`] ?? '-')
+				variableObj[`dsk${dk.n}_type`]       = DSK_TYPE_LABELS[d[`data_${dk.id}05`]] ?? (d[`data_${dk.id}05`] ?? '-')
+			}
 
 			self.setVariableValues(variableObj)
 		} catch (error) {

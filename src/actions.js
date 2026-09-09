@@ -2572,6 +2572,81 @@ module.exports = {
 			},
 		}
 
+		const PINP_CHOICES = [
+			{ id: '1B', label: 'PiP 1' },
+			{ id: '1C', label: 'PiP 2' },
+			{ id: '1D', label: 'PiP 3' },
+			{ id: '1E', label: 'PiP 4' },
+		]
+		const DSK_CHOICES = [
+			{ id: '1F', label: 'DSK 1' },
+			{ id: '20', label: 'DSK 2' },
+		]
+
+		actions.capture_pinp = {
+			name: 'Capture PiP Settings to Variables',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'PiP Channel',
+					id: 'pinp',
+					default: '1B',
+					choices: PINP_CHOICES,
+				},
+			],
+			callback: function (action) {
+				self.capturePinp(action.options.pinp)
+			},
+		}
+
+		actions.apply_pinp = {
+			name: 'Apply Captured PiP Settings',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'PiP Channel',
+					id: 'pinp',
+					default: '1B',
+					choices: PINP_CHOICES,
+				},
+			],
+			callback: function (action) {
+				self.applyPinp(action.options.pinp)
+			},
+		}
+
+		actions.capture_dsk = {
+			name: 'Capture DSK Settings to Variables',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'DSK Channel',
+					id: 'dsk',
+					default: '1F',
+					choices: DSK_CHOICES,
+				},
+			],
+			callback: function (action) {
+				self.captureDsk(action.options.dsk)
+			},
+		}
+
+		actions.apply_dsk = {
+			name: 'Apply Captured DSK Settings',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'DSK Channel',
+					id: 'dsk',
+					default: '1F',
+					choices: DSK_CHOICES,
+				},
+			],
+			callback: function (action) {
+				self.applyDsk(action.options.dsk)
+			},
+		}
+
 		self.setActionDefinitions(actions)
 	},
 }

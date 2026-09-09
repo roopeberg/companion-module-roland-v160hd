@@ -603,4 +603,75 @@ module.exports = {
 	formatBytes: function (bytes) {
 		return bytes.map((byte) => byte.toString(16).padStart(2, '0').toUpperCase()).join('')
 	},
+
+	// Inverse of calculateBytes. hexStr is a 4-char hex string (2 7-bit bytes packed).
+	// TODO: verify actual device response format when live
+	parseBytes: function (hexStr, scale = 10, signed = false) {
+		if (!hexStr || hexStr.length < 4) return null
+		const msb = parseInt(hexStr.substring(0, 2), 16)
+		const lsb = parseInt(hexStr.substring(2, 4), 16)
+		let scaled = (msb << 7) | lsb
+		if (signed && scaled > 0x1fff) scaled -= 0x4000
+		return scaled / scale
+	},
+
+	capturePinp: function (pinp) {
+		let self = this
+		// Request all window + view parameters for this PiP channel
+		const suffixes = ['02', '03', '04', '06', '08', '0A', '0C', '0E', '0F', '10', '11', '13', '15']
+		for (const s of suffixes) {
+			self.sendRawCommand(`RQH:00${pinp}${s},000001;`)
+		}
+		setTimeout(() => self.checkVariables(), 500)
+	},
+
+	applyPinp: function (pinp) {
+		let self = this
+		// Re-send all captured raw values back to the device
+		const params = [
+			{ suffix: '02', key: `data_${pinp}02` }, // source (1 byte)
+			{ suffix: '03', key: `data_${pinp}03` }, // type (1 byte)
+			{ suffix: '04', key: `data_${pinp}04` }, // position H (2 bytes)
+			{ suffix: '06', key: `data_${pinp}06` }, // position V (2 bytes)
+			{ suffix: '08', key: `data_${pinp}08` }, // size (2 bytes)
+			{ suffix: '0A', key: `data_${pinp}0A` }, // cropping H (2 bytes)
+			{ suffix: '0C', key: `data_${pinp}0C` }, // cropping V (2 bytes)
+			{ suffix: '0E', key: `data_${pinp}0E` }, // shape (1 byte)
+			{ suffix: '0F', key: `data_${pinp}0F` }, // border color (1 byte)
+			{ suffix: '10', key: `data_${pinp}10` }, // border width (1 byte)
+			{ suffix: '11', key: `data_${pinp}11` }, // view pos H (2 bytes)
+			{ suffix: '13', key: `data_${pinp}13` }, // view pos V (2 bytes)
+			{ suffix: '15', key: `data_${pinp}15` }, // zoom (2 bytes)
+		]
+		for (const p of params) {
+			const val = self.DATA[p.key]
+			if (val !== undefined) {
+				self.sendCommand(`00${pinp}${p.suffix}`, val)
+			}
+		}
+	},
+
+	captureDsk: function (dsk) {
+		let self = this
+		const suffixes = ['03', '04', '05']
+		for (const s of suffixes) {
+			self.sendRawCommand(`RQH:00${dsk}${s},000001;`)
+		}
+		setTimeout(() => self.checkVariables(), 500)
+	},
+
+	applyDsk: function (dsk) {
+		let self = this
+		const params = [
+			{ suffix: '03', key: `data_${dsk}03` }, // key source
+			{ suffix: '04', key: `data_${dsk}04` }, // fill source
+			{ suffix: '05', key: `data_${dsk}05` }, // type
+		]
+		for (const p of params) {
+			const val = self.DATA[p.key]
+			if (val !== undefined) {
+				self.sendCommand(`00${dsk}${p.suffix}`, val)
+			}
+		}
+	},
 }

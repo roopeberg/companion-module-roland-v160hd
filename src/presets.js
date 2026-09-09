@@ -127,6 +127,52 @@ module.exports = {
 			}
 		}
 
+		// Capture / Apply presets for PiP 1-4 and DSK 1-2
+		const CYAN = combineRgb(0, 160, 200)
+		const PURPLE = combineRgb(120, 0, 180)
+
+		const pipCaptureTargets = [
+			{ id: '1B', n: 1 }, { id: '1C', n: 2 }, { id: '1D', n: 3 }, { id: '1E', n: 4 },
+		]
+		for (const p of pipCaptureTargets) {
+			presets.push({
+				category: 'PiP Capture / Apply',
+				name: `Capture PiP ${p.n}`,
+				type: 'button',
+				style: { text: `CAPTURE\nPiP ${p.n}`, size: 'auto', color: WHITE, bgcolor: CYAN },
+				steps: [{ down: [{ actionId: 'capture_pinp', options: { pinp: p.id } }], up: [] }],
+				feedbacks: [],
+			})
+			presets.push({
+				category: 'PiP Capture / Apply',
+				name: `Apply PiP ${p.n}`,
+				type: 'button',
+				style: { text: `APPLY\nPiP ${p.n}`, size: 'auto', color: WHITE, bgcolor: PURPLE },
+				steps: [{ down: [{ actionId: 'apply_pinp', options: { pinp: p.id } }], up: [] }],
+				feedbacks: [],
+			})
+		}
+
+		const dskCaptureTargets = [{ id: '1F', n: 1 }, { id: '20', n: 2 }]
+		for (const d of dskCaptureTargets) {
+			presets.push({
+				category: 'DSK Capture / Apply',
+				name: `Capture DSK ${d.n}`,
+				type: 'button',
+				style: { text: `CAPTURE\nDSK ${d.n}`, size: 'auto', color: WHITE, bgcolor: CYAN },
+				steps: [{ down: [{ actionId: 'capture_dsk', options: { dsk: d.id } }], up: [] }],
+				feedbacks: [],
+			})
+			presets.push({
+				category: 'DSK Capture / Apply',
+				name: `Apply DSK ${d.n}`,
+				type: 'button',
+				style: { text: `APPLY\nDSK ${d.n}`, size: 'auto', color: WHITE, bgcolor: PURPLE },
+				steps: [{ down: [{ actionId: 'apply_dsk', options: { dsk: d.id } }], up: [] }],
+				feedbacks: [],
+			})
+		}
+
 		self.setPresetDefinitions(presets)
 	},
 }

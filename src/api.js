@@ -607,7 +607,7 @@ module.exports = {
 		let self = this
 
 		let cmd = String(command).replace(/[\r\n]+$/g, '')
-		if ((cmd.startsWith('DTH:') || cmd.startsWith('RQH:')) && !cmd.endsWith(';')) {
+		if (!cmd.endsWith(';')) {
 			cmd += ';'
 		}
 		cmd += '\n'

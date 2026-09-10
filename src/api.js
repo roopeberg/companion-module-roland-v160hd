@@ -131,12 +131,16 @@ module.exports = {
 	startInterval: function () {
 		let self = this
 
+		if (self.INTERVAL !== undefined) {
+			clearInterval(self.INTERVAL)
+			self.INTERVAL = undefined
+		}
+
 		if (self.config.polling) {
-			self.log('info', `Starting Update Interval: Fetching new data from Device every ${self.config.pollingrate}ms.`)
 			if (self.config.pollingrate === undefined) {
 				self.config.pollingrate = 1000
 			}
-
+			self.log('info', `Starting Update Interval: Fetching new data from Device every ${self.config.pollingrate}ms.`)
 			self.INTERVAL = setInterval(self.getData.bind(this), parseInt(self.config.pollingrate))
 		} else {
 			self.log('info', 'Polling is disabled. Module will not request new data at a regular rate.')

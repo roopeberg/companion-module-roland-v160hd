@@ -44,13 +44,21 @@ module.exports = {
 			self.socket.on('data', function (buffer) {
 				self.tcpBuffer += buffer.toString('utf8')
 
-				// Auth prompts have no reliable terminator — match them as soon as the
-				// full string is present anywhere in the buffer so TCP fragmentation
-				// cannot stall authentication.
+				// Auth prompts have no reliable terminator — detect them by substring.
+				// Before slicing the prompt out, flush any complete protocol messages
+				// that precede it so nothing is discarded.
 				const AUTH_PROMPTS = ['Enter password:', 'Welcome to V-160HD.']
 				for (const prompt of AUTH_PROMPTS) {
 					const idx = self.tcpBuffer.indexOf(prompt)
 					if (idx !== -1) {
+						// Flush semicolon-terminated messages before the prompt.
+						if (idx > 0) {
+							const before = self.tcpBuffer.slice(0, idx)
+							const lastSemiBefore = before.lastIndexOf(';')
+							if (lastSemiBefore !== -1) {
+								self.updateData(before.slice(0, lastSemiBefore + 1))
+							}
+						}
 						self.tcpBuffer = self.tcpBuffer.slice(idx + prompt.length)
 						self.updateData(prompt)
 					}

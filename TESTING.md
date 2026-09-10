@@ -13,16 +13,16 @@ require `RQH` size `000002`. Module updated accordingly.
 
 ## ✅ #2 — PiP parameter addresses (live verified, PiP 1)
 
-| Param           | Address | Size   | Result          |
-|-----------------|---------|--------|-----------------|
-| SOURCE          | 001B02  | 1-byte | `29` (Input 10) |
-| TYPE            | 001B03  | 1-byte | `00` (PinP)     |
-| SHAPE           | 001B0E  | 1-byte | `00` (Rect)     |
-| BORDER COLOR    | 001B0F  | 1-byte | `00` (White)    |
-| BORDER WIDTH    | 001B10  | 1-byte | `00`            |
-| VIEW POS H      | 001B11  | 2-byte | `0000`          |
-| VIEW POS V      | 001B13  | 2-byte | `0000`          |
-| VIEW ZOOM       | 001B15  | 2-byte | `0064` (100%)   |
+| Param        | Address | Size   | Result          |
+| ------------ | ------- | ------ | --------------- |
+| SOURCE       | 001B02  | 1-byte | `29` (Input 10) |
+| TYPE         | 001B03  | 1-byte | `00` (PinP)     |
+| SHAPE        | 001B0E  | 1-byte | `00` (Rect)     |
+| BORDER COLOR | 001B0F  | 1-byte | `00` (White)    |
+| BORDER WIDTH | 001B10  | 1-byte | `00`            |
+| VIEW POS H   | 001B11  | 2-byte | `0000`          |
+| VIEW POS V   | 001B13  | 2-byte | `0000`          |
+| VIEW ZOOM    | 001B15  | 2-byte | `0064` (100%)   |
 
 ## ✅ #3 — PiP Position H/V range
 
@@ -80,6 +80,7 @@ Variables `pgm_source` and `pvw_source` should reflect the current source label.
 ## ⚠️ #10 — PiP source / type / shape / border presets
 
 Test preset buttons in Companion for:
+
 - PiP source change (HDMI/SDI/Input)
 - PiP type change (PinP / Luma-W / Luma-B / Chroma)
 - PiP shape change (Rect / Circle / Diamond)

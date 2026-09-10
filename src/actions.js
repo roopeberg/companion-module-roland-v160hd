@@ -53,6 +53,7 @@ module.exports = {
 				let address = '00' + '00' + options.input.toString(16).padStart(2, '0').toUpperCase()
 				let value = options.assign.toString(16).padStart(2, '0').toUpperCase()
 				self.sendCommand(address, value)
+				self.getInputAssignData()
 			},
 		}
 
@@ -1690,8 +1691,7 @@ module.exports = {
 				let address = '00' + '21' + '00'
 				let value = options.input
 				self.sendCommand(address, value)
-				self.DATA.pgm_source = value
-				self.checkFeedbacks('bus_tally')
+				self.getAuxData()
 			},
 		}
 
@@ -1711,8 +1711,7 @@ module.exports = {
 				let address = '00' + '21' + '01'
 				let value = options.input
 				self.sendCommand(address, value)
-				self.DATA.pvw_source = value
-				self.checkFeedbacks('bus_tally')
+				self.getAuxData()
 			},
 		}
 

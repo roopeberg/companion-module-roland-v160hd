@@ -234,6 +234,31 @@ module.exports = {
 		self.sendRawCommand('RQH:020156,000001;') //Aux 3 link on/off
 	},
 
+	getInputAssignData: function () {
+		let self = this
+
+		for (let i = 0; i < 10; i++) {
+			const hex = i.toString(16).padStart(2, '0').toUpperCase()
+			self.sendRawCommand(`RQH:0000${hex},000001;`)
+		}
+	},
+
+	// Resolves an INPUT slot ID (20–29) to the physical source ID stored in
+	// DATA.input_assign_NN. If not yet cached, fires a targeted RQH so the
+	// assignment arrives shortly and triggers a re-resolve via the handler above.
+	resolveInputSource: function (id) {
+		let self = this
+		const val = parseInt(id, 16)
+		if (val >= 0x20 && val <= 0x29) {
+			const slotHex = (val - 0x20).toString(16).padStart(2, '0').toUpperCase()
+			const physical = self.DATA[`input_assign_${slotHex}`]
+			if (physical !== undefined) return physical
+			// Not cached yet — request it; response will re-resolve the bus source
+			self.sendRawCommand(`RQH:0000${slotHex},000001;`)
+		}
+		return id
+	},
+
 	/*getTallyData: function() {
 		let self = this;
 
@@ -326,7 +351,7 @@ module.exports = {
 												}*/
 
 									if (param1 == '0C' && param2 == '00' && param3 == '00') {
-										//subscribe tally message
+										//subscribe tally message — device pushes this on every source change
 										self.logVerbose('Received Subscribe Tally Message')
 										let index = 0
 										const halfLength = value.length / 2
@@ -334,32 +359,47 @@ module.exports = {
 											const input = t.toString(16).padStart(2, '0').toUpperCase()
 											const tallyState = value[index] + value[index + 1]
 											self.updateTally(input, tallyState)
-
 											index = index + 2
 										}
+										// Re-poll actual bus sources immediately so DATA.pgm_source etc.
+										// reflect the hardware-panel change within one TCP round-trip
+										// instead of waiting for the next regular poll interval.
+										self.getAuxData()
 									}
 
 									if (param1 == '00') {
-										if (param2 == '21' && param3 == '00') {
+										if (param2 == '00' && parseInt(param3, 16) <= 9) {
+											//INPUT slot assignment (000000–000009) — re-resolve any bus source pending on this slot
+											self.logVerbose(`Received Input ${parseInt(param3, 16) + 1} Assign: ${value}`)
+											self.DATA[`input_assign_${param3}`] = value
+											const inputId = (parseInt(param3, 16) + 0x20).toString(16).padStart(2, '0').toUpperCase()
+											const busSources = ['pgm_source', 'pvw_source', 'aux1source', 'aux2source', 'aux3source']
+											for (const key of busSources) {
+												if (self.DATA[key] === inputId) {
+													self.DATA[key] = value
+													self.logVerbose(`Re-resolved ${key}: ${inputId} → ${value}`)
+												}
+											}
+										} else if (param2 == '21' && param3 == '00') {
 											//PGM source
 											self.logVerbose('Received PGM Source: ' + value)
-											self.DATA.pgm_source = value
+											self.DATA.pgm_source = self.resolveInputSource(value)
 										} else if (param2 == '21' && param3 == '01') {
 											//PVW source
 											self.logVerbose('Received PVW Source: ' + value)
-											self.DATA.pvw_source = value
+											self.DATA.pvw_source = self.resolveInputSource(value)
 										} else if (param2 == '00' && param3 == '11') {
 											//aux 1 source
 											self.logVerbose('Received Aux 1 Source: ' + value)
-											self.DATA.aux1source = value
+											self.DATA.aux1source = self.resolveInputSource(value)
 										} else if (param2 == '00' && param3 == '2E') {
 											//aux 2 source
 											self.logVerbose('Received Aux 2 Source: ' + value)
-											self.DATA.aux2source = value
+											self.DATA.aux2source = self.resolveInputSource(value)
 										} else if (param2 == '00' && param3 == '2F') {
 											//aux 3 source
 											self.logVerbose('Received Aux 3 Source: ' + value)
-											self.DATA.aux3source = value
+											self.DATA.aux3source = self.resolveInputSource(value)
 										} else if (param2 == '1B' && param3 == '02') {
 											//pnp key 1 source
 											let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {

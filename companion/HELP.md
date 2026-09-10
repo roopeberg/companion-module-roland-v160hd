@@ -74,7 +74,6 @@ The switcher should be running firmware 1.04 or higher. A password must be set o
 ## Feedbacks
 
 - **Bus Tally (per bus)** — true when a given source is active on a specific bus (PGM, PVW, AUX1–3). Each bus is tracked independently: PGM tally only lights up when the source is on PGM, not when it is on an AUX bus. PGM, PVW and AUX sources are polled every interval (requires polling enabled) and updated immediately when Companion sends a select command.
-- **Tally State** — legacy combined tally (PGM+AUX composite push from device). Kept for backwards compatibility; prefer Bus Tally for new buttons.
 - **PnP/Key On Air State** — highlights a button when a PiP/Key channel is active
 - **Snapshot File Exists** — true when a named snapshot file is present on disk. Used by Save/Clear preset buttons to indicate whether a slot is occupied.
 

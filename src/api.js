@@ -1,4 +1,9 @@
 const { InstanceStatus, TCPHelper } = require('@companion-module/base')
+const fs = require('fs')
+const path = require('path')
+const os = require('os')
+
+const SNAPSHOT_DIR = path.join(os.homedir(), 'v160hd-snapshots')
 
 module.exports = {
 	initConnection: function () {
@@ -159,6 +164,8 @@ module.exports = {
 	getAuxData: function () {
 		let self = this
 
+		self.sendRawCommand('RQH:002100,000001;') //PGM current source
+		self.sendRawCommand('RQH:002101,000001;') //PVW current source
 		self.sendRawCommand('RQH:000011,000001;') //Aux 1 current source
 		self.sendRawCommand('RQH:00002E,000001;') //Aux 2 current source
 		self.sendRawCommand('RQH:00002F,000001;') //Aux 3 current source
@@ -311,7 +318,15 @@ module.exports = {
 												}
 
 												if (param1 == '00') {
-													if (param2 == '00' && param3 == '11') {
+													if (param2 == '21' && param3 == '00') {
+														//PGM source
+														self.logVerbose('Received PGM Source: ' + value)
+														self.DATA.pgm_source = value
+													} else if (param2 == '21' && param3 == '01') {
+														//PVW source
+														self.logVerbose('Received PVW Source: ' + value)
+														self.DATA.pvw_source = value
+													} else if (param2 == '00' && param3 == '11') {
 														//aux 1 source
 														self.logVerbose('Received Aux 1 Source: ' + value)
 														self.DATA.aux1source = value
@@ -703,6 +718,71 @@ module.exports = {
 			if (val !== undefined) {
 				self.sendCommand(`00${dsk}${p.suffix}`, val)
 			}
+		}
+	},
+
+	saveSnapshot: function (name) {
+		let self = this
+		try {
+			if (!fs.existsSync(SNAPSHOT_DIR)) {
+				fs.mkdirSync(SNAPSHOT_DIR, { recursive: true })
+			}
+			const file = path.join(SNAPSHOT_DIR, `${name}.json`)
+			const data = {
+				name,
+				savedAt: new Date().toISOString(),
+				device: self.config.host,
+				data: { ...self.DATA },
+			}
+			fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8')
+			self.log('info', `Snapshot saved: ${file}`)
+			self.checkFeedbacks('snapshot_exists')
+		} catch (err) {
+			self.log('error', `Save snapshot failed: ${err.message}`)
+		}
+	},
+
+	loadSnapshot: function (name) {
+		let self = this
+		try {
+			const file = path.join(SNAPSHOT_DIR, `${name}.json`)
+			if (!fs.existsSync(file)) {
+				self.log('error', `Snapshot not found: ${file}`)
+				return
+			}
+			const raw = fs.readFileSync(file, 'utf8')
+			const snap = JSON.parse(raw)
+			Object.assign(self.DATA, snap.data)
+			self.log('info', `Snapshot loaded: ${name} (saved ${snap.savedAt})`)
+		} catch (err) {
+			self.log('error', `Load snapshot failed: ${err.message}`)
+		}
+	},
+
+	listSnapshots: function () {
+		try {
+			if (!fs.existsSync(SNAPSHOT_DIR)) return []
+			return fs.readdirSync(SNAPSHOT_DIR)
+				.filter((f) => f.endsWith('.json'))
+				.map((f) => f.replace(/\.json$/, ''))
+		} catch {
+			return []
+		}
+	},
+
+	deleteSnapshot: function (name) {
+		let self = this
+		try {
+			const file = path.join(SNAPSHOT_DIR, `${name}.json`)
+			if (!fs.existsSync(file)) {
+				self.log('warn', `Snapshot not found: ${file}`)
+				return
+			}
+			fs.unlinkSync(file)
+			self.log('info', `Snapshot deleted: ${name}`)
+			self.checkFeedbacks('snapshot_exists')
+		} catch (err) {
+			self.log('error', `Delete snapshot failed: ${err.message}`)
 		}
 	},
 }

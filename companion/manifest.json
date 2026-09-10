@@ -19,7 +19,7 @@
 	"runtime": {
 		"type": "node22",
 		"api": "nodejs-ipc",
-		"apiVersion": "2.0.4",
+		"apiVersion": "2.1.3",
 		"entrypoint": "../index.js"
 	},
 	"manufacturer": "Roland",

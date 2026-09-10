@@ -19,6 +19,10 @@ module.exports = {
 		variables.pnpkey4_pgm = { name: 'PnP/Key 4 on PGM' }
 		variables.pnpkey4_pvw = { name: 'PnP/Key 4 on PVW' }
 
+		//PGM/PVW current source
+		variables.pgm_source = { name: 'PGM Current Source' }
+		variables.pvw_source = { name: 'PVW Current Source' }
+
 		//pnp/key sources
 		variables.pnpkey1_source = { name: 'PnP/Key 1 Source' }
 		variables.pnpkey2_source = { name: 'PnP/Key 2 Source' }
@@ -191,6 +195,12 @@ module.exports = {
 			} else {
 				variableObj.usb = self.DATA.usbassign
 			}
+
+			//PGM/PVW current source
+			let pgmSrc = self.CHOICES_PGMPVW_SELECT.find((item) => item.id == self.DATA.pgm_source)
+			let pvwSrc = self.CHOICES_PGMPVW_SELECT.find((item) => item.id == self.DATA.pvw_source)
+			variableObj.pgm_source = pgmSrc ? pgmSrc.label : (self.DATA.pgm_source ?? '-')
+			variableObj.pvw_source = pvwSrc ? pvwSrc.label : (self.DATA.pvw_source ?? '-')
 
 			//Aux Sources
 			let aux1source = self.CHOICES_PGMPVW_SELECT.find((item) => {

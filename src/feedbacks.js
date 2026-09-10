@@ -452,6 +452,64 @@ module.exports = {
 			},
 		}
 
+		feedbacks.bus_tally = {
+			type: 'boolean',
+			name: 'Bus Tally (per bus)',
+			description: 'True when the given source is active on the selected bus (PGM, PVW, AUX1–3)',
+			style: {
+				color: foregroundColor,
+				bgcolor: backgroundColorRed,
+			},
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Bus',
+					id: 'bus',
+					default: 'pgm',
+					choices: [
+						{ id: 'pgm', label: 'Program (PGM)' },
+						{ id: 'pvw', label: 'Preview (PVW)' },
+						{ id: 'aux1', label: 'AUX 1' },
+						{ id: 'aux2', label: 'AUX 2' },
+						{ id: 'aux3', label: 'AUX 3' },
+					],
+				},
+				{
+					type: 'dropdown',
+					label: 'Source',
+					id: 'source',
+					default: self.CHOICES_PGMPVW_SELECT[0].id,
+					choices: self.CHOICES_PGMPVW_SELECT,
+				},
+			],
+			callback: function (feedback) {
+				let opt = feedback.options
+				let busKey = opt.bus === 'pgm' ? 'pgm_source'
+					: opt.bus === 'pvw' ? 'pvw_source'
+					: opt.bus === 'aux1' ? 'aux1source'
+					: opt.bus === 'aux2' ? 'aux2source'
+					: 'aux3source'
+				return self.DATA[busKey] == opt.source
+			},
+		}
+
+		feedbacks.snapshot_exists = {
+			name: 'Snapshot File Exists',
+			type: 'boolean',
+			defaultStyle: {},
+			options: [
+				{
+					type: 'textinput',
+					label: 'Snapshot name',
+					id: 'name',
+					default: 'snapshot1',
+				},
+			],
+			callback: function (feedback) {
+				return self.listSnapshots().includes(feedback.options.name)
+			},
+		}
+
 		self.setFeedbackDefinitions(feedbacks)
 	},
 }

@@ -1683,6 +1683,8 @@ module.exports = {
 				let address = '00' + '21' + '00'
 				let value = options.input
 				self.sendCommand(address, value)
+				self.DATA.pgm_source = value
+				self.checkFeedbacks('bus_tally')
 			},
 		}
 
@@ -1702,6 +1704,8 @@ module.exports = {
 				let address = '00' + '21' + '01'
 				let value = options.input
 				self.sendCommand(address, value)
+				self.DATA.pvw_source = value
+				self.checkFeedbacks('bus_tally')
 			},
 		}
 
@@ -2652,6 +2656,101 @@ module.exports = {
 			],
 			callback: function (action) {
 				self.applyDsk(action.options.dsk)
+			},
+		}
+
+		actions.save_snapshot = {
+			name: 'Save Snapshot to File',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Snapshot name (filename, no extension)',
+					id: 'name',
+					default: 'snapshot1',
+					regex: '/^[a-zA-Z0-9_\\-]+$/',
+					tooltip: 'Alphanumeric, dash and underscore only. Saved to ~/v160hd-snapshots/',
+				},
+			],
+			callback: function (action) {
+				self.saveSnapshot(action.options.name)
+			},
+		}
+
+		actions.load_snapshot = {
+			name: 'Load Snapshot from File',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Snapshot name (filename, no extension)',
+					id: 'name',
+					default: 'snapshot1',
+					tooltip: 'Load from ~/v160hd-snapshots/<name>.json (does not apply to device, use Apply after)',
+				},
+			],
+			callback: function (action) {
+				self.loadSnapshot(action.options.name)
+			},
+		}
+
+		actions.load_and_apply_pinp_snapshot = {
+			name: 'Load Snapshot + Apply PiP',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Snapshot name',
+					id: 'name',
+					default: 'snapshot1',
+				},
+				{
+					type: 'dropdown',
+					label: 'PiP Channel',
+					id: 'pinp',
+					default: '1B',
+					choices: PINP_CHOICES,
+				},
+			],
+			callback: function (action) {
+				self.loadSnapshot(action.options.name)
+				setTimeout(() => self.applyPinp(action.options.pinp), 200)
+			},
+		}
+
+		actions.delete_snapshot = {
+			name: 'Delete Snapshot File',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Snapshot name',
+					id: 'name',
+					default: 'snapshot1',
+					tooltip: 'Deletes ~/v160hd-snapshots/<name>.json permanently',
+				},
+			],
+			callback: function (action) {
+				self.deleteSnapshot(action.options.name)
+			},
+		}
+
+		actions.load_and_apply_dsk_snapshot = {
+			name: 'Load Snapshot + Apply DSK',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Snapshot name',
+					id: 'name',
+					default: 'snapshot1',
+				},
+				{
+					type: 'dropdown',
+					label: 'DSK Channel',
+					id: 'dsk',
+					default: '1F',
+					choices: DSK_CHOICES,
+				},
+			],
+			callback: function (action) {
+				self.loadSnapshot(action.options.name)
+				setTimeout(() => self.applyDsk(action.options.dsk), 200)
 			},
 		}
 

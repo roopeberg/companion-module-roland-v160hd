@@ -2,56 +2,99 @@
 
 Tests to run with live device connected.
 
-## #1 — CRITICAL: RQH 2-byte parameter response size
+Legend: ✅ Verified OK | ⚠️ Unverified | ❌ Known issue
 
-Send: `RQH:001B04,000001;`
-Check: Does the device respond with 2 bytes (4 hex chars) or 1 byte (2 hex chars)?
+---
 
-- If **4 hex chars** (e.g. `DTH:001B04,2800;`) → current capture works, no fix needed
-- If **2 hex chars** (e.g. `DTH:001B04,28;`) → capturePinp is broken for all position/size/zoom params → fix by changing `000001` to `000002` for 2-byte params
+## ✅ #1 — RQH 2-byte parameter response size
 
-Affected params if broken (all in capturePinp):
-- `04` POSITION H, `06` POSITION V
-- `08` SIZE, `0A` CROPPING H, `0C` CROPPING V
-- `11` VIEW POSITION H, `13` VIEW POSITION V
-- `15` VIEW ZOOM
+Confirmed live: all 2-byte PiP parameters (position H/V, size, cropping, view pos H/V, zoom)
+require `RQH` size `000002`. Module updated accordingly.
 
-## #2 — PiP Position H/V range
+## ✅ #2 — PiP parameter addresses (live verified, PiP 1)
 
-Was: -50..+50% → Fixed to: -100..+100% (per Control Guide p.7)
+| Param           | Address | Size   | Result          |
+|-----------------|---------|--------|-----------------|
+| SOURCE          | 001B02  | 1-byte | `29` (Input 10) |
+| TYPE            | 001B03  | 1-byte | `00` (PinP)     |
+| SHAPE           | 001B0E  | 1-byte | `00` (Rect)     |
+| BORDER COLOR    | 001B0F  | 1-byte | `00` (White)    |
+| BORDER WIDTH    | 001B10  | 1-byte | `00`            |
+| VIEW POS H      | 001B11  | 2-byte | `0000`          |
+| VIEW POS V      | 001B13  | 2-byte | `0000`          |
+| VIEW ZOOM       | 001B15  | 2-byte | `0064` (100%)   |
 
-Test: Set PiP position to -100% and +100% in Companion.
-Expected: PiP window moves to extreme left/right edge of screen.
+## ✅ #3 — PiP Position H/V range
 
-## #3 — Capture / Apply round-trip (PiP)
+Fixed: -100..+100% (per Control Guide p.7). Verified against live device.
+
+## ⚠️ #4 — Capture / Apply round-trip (PiP)
 
 1. Set PiP 1 to a known position/size on the mixer
-2. Press "Capture PiP 1" button in Companion
-3. Check that variables `pip1_positionH`, `pip1_positionV`, `pip1_size` show correct values
+2. Press "Capture PiP 1" preset button
+3. Verify module variables show correct values
 4. Change PiP position on mixer
-5. Press "Apply PiP 1" — PiP should return to captured position
+5. Press "Apply PiP 1" — PiP should return to captured position/size
 
-## #4 — Capture / Apply round-trip (DSK)
+## ⚠️ #5 — Capture / Apply round-trip (DSK)
 
 Same as above for DSK 1/2.
-Note: current capture only saves KEY SOURCE, FILL SOURCE, DSK TYPE — not on/off state or levels.
+Captured params: KEY SOURCE (03), FILL SOURCE (04), TYPE (05), LEVEL (06, 2-byte),
+GAIN (07), MIX LEVEL (09), MODE (02), PGM SW (00), PVW SW (01).
 
-## #5 — PGM / PVW source selection presets
+## ⚠️ #6 — Snapshot save / load / clear
 
-Verify preset buttons in Companion change the correct source on PGM and PVW buses.
-Check tally feedback lights up red (PGM) / green (PVW) on active source.
+1. Capture PiP 1 settings
+2. Press **SAVE / Snap 1** — button should light up (bright orange)
+3. Verify file exists at `~/v160hd-snapshots/snapshot1.json`
+4. Inspect file — should contain all captured DATA keys for PiP 1
+5. Change PiP settings on mixer
+6. Press **Snap 1 / PiP 1** — device should restore saved settings
+7. Press **CLEAR / Snap 1** — button should dim; file should be deleted
 
-## #6 — AUX 1–3 source selection presets
+## ⚠️ #7 — PGM / PVW source selection presets
+
+Verify preset buttons change correct source on PGM and PVW buses.
+Check tally feedback (bus_tally): red (PGM) / green (PVW) on active source only.
+PGM tally must NOT light up when source is on AUX only.
+Module polls `002100` (PGM) and `002101` (PVW) at init; feedback is updated immediately on Companion command and on device push.
+
+## ⚠️ #8 — AUX 1–3 source selection presets
 
 Verify preset buttons change AUX output source.
-Check orange tally feedback on active source.
+Check orange tally feedback (bus_tally) on active source only.
 
-## #7 — pnpkey_fade addresses (unverified)
+## ❌ #9 — AUX tally: device hardware panel changes not reflected
 
-Addresses `020305`–`020308` are used for PiP fade enable/disable.
-Verify these work — not confirmed against documentation.
+When AUX source is changed from the device's own control panel (not via Companion),
+the module does not receive a push update. Tally only updates when Companion sends a command.
+Fix: implement polling for AUX state. Not yet implemented.
 
-## #8 — aux_mute addresses (unverified)
+## ⚠️ #14 — Per-bus tally isolation (PGM vs AUX)
+
+Ensure that `bus_tally` feedback for PGM bus does NOT activate when the same source is
+active only on AUX1/AUX2/AUX3. Each bus (pgm/pvw/aux1/aux2/aux3) is tracked independently
+in `DATA.pgm_source`, `DATA.pvw_source`, `DATA.aux1source` etc.
+Variables `pgm_source` and `pvw_source` should reflect the current source label.
+
+## ⚠️ #10 — PiP source / type / shape / border presets
+
+Test preset buttons in Companion for:
+- PiP source change (HDMI/SDI/Input)
+- PiP type change (PinP / Luma-W / Luma-B / Chroma)
+- PiP shape change (Rect / Circle / Diamond)
+- PiP border color change (10 colors)
+
+## ⚠️ #11 — DSK source / type presets
+
+Test DSK Key Source, Fill Source, and Type preset buttons.
+
+## ⚠️ #12 — pnpkey_fade addresses (unverified)
+
+Addresses `020305`–`020308` used for PiP fade enable/disable.
+Not confirmed against documentation.
+
+## ⚠️ #13 — aux_mute addresses (unverified)
 
 Addresses `012203`, `012503`, `012603` used for AUX mute.
-Verify these work — not confirmed against documentation.
+Not confirmed against documentation.

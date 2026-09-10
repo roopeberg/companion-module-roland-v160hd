@@ -75,7 +75,7 @@ module.exports = {
 					}
 					presets[id] = {
 						name: `${dest.label}: ${src.label}`,
-						type: 'button',
+						type: 'simple',
 						style: { text: src.label, size: 'auto', color: WHITE, bgcolor: DARK },
 						steps: [{ down: [{ actionId: dest.actionId, options: { input: src.pgmpvw_id } }], up: [] }],
 						feedbacks,
@@ -95,7 +95,7 @@ module.exports = {
 					const id = `${sectionId}_${src.pgmpvw_id}`
 					presets[id] = {
 						name: `${aux.label}: ${src.label}`,
-						type: 'button',
+						type: 'simple',
 						style: { text: src.label, size: 'auto', color: WHITE, bgcolor: DARK },
 						steps: [
 							{
@@ -127,14 +127,14 @@ module.exports = {
 			const applyId = `apply_pip${p.n}`
 			presets[capId] = {
 				name: `Capture PiP ${p.n}`,
-				type: 'button',
+				type: 'simple',
 				style: { text: `CAPTURE\nPiP ${p.n}`, size: 'auto', color: WHITE, bgcolor: CYAN },
 				steps: [{ down: [{ actionId: 'capture_pinp', options: { pinp: p.id } }], up: [] }],
 				feedbacks: [],
 			}
 			presets[applyId] = {
 				name: `Apply PiP ${p.n}`,
-				type: 'button',
+				type: 'simple',
 				style: { text: `APPLY\nPiP ${p.n}`, size: 'auto', color: WHITE, bgcolor: PURPLE },
 				steps: [{ down: [{ actionId: 'apply_pinp', options: { pinp: p.id } }], up: [] }],
 				feedbacks: [],
@@ -151,14 +151,14 @@ module.exports = {
 			const applyId = `apply_dsk${d.n}`
 			presets[capId] = {
 				name: `Capture DSK ${d.n}`,
-				type: 'button',
+				type: 'simple',
 				style: { text: `CAPTURE\nDSK ${d.n}`, size: 'auto', color: WHITE, bgcolor: CYAN },
 				steps: [{ down: [{ actionId: 'capture_dsk', options: { dsk: d.id } }], up: [] }],
 				feedbacks: [],
 			}
 			presets[applyId] = {
 				name: `Apply DSK ${d.n}`,
-				type: 'button',
+				type: 'simple',
 				style: { text: `APPLY\nDSK ${d.n}`, size: 'auto', color: WHITE, bgcolor: PURPLE },
 				steps: [{ down: [{ actionId: 'apply_dsk', options: { dsk: d.id } }], up: [] }],
 				feedbacks: [],

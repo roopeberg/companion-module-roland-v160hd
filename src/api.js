@@ -6,12 +6,20 @@ const os = require('os')
 
 const SNAPSHOT_DIR = path.join(os.homedir(), 'v160hd-snapshots')
 
-// Keys in DATA that belong to PiP (1B–1E) and DSK (1F–20) capture.
-// Only these are persisted to / restored from snapshot files so that
-// live state (PGM/PVW source, AUX, mute, outputs …) is never overwritten.
-const SNAPSHOT_PREFIXES = ['1B', '1C', '1D', '1E', '1F', '20']
+// Exact DATA keys that belong to PiP / DSK capture (set by capturePinp / captureDsk).
+// Only these are persisted to and restored from snapshot files so that live state
+// (PiP on-air, PGM/PVW source, AUX, mute, outputs …) is never overwritten.
+const PIP_PREFIXES = ['1B', '1C', '1D', '1E']
+const PIP_SUFFIXES = new Set(['02', '03', '04', '06', '08', '0A', '0C', '0E', '0F', '10', '11', '13', '15'])
+const DSK_PREFIXES = ['1F', '20']
+const DSK_SUFFIXES = new Set(['00', '01', '02', '03', '04', '05', '06', '07', '09'])
 function isCaptureKey(k) {
-	return k.startsWith('data_') && SNAPSHOT_PREFIXES.some((p) => k.startsWith(`data_${p}`))
+	if (!k.startsWith('data_') || k.length !== 9) return false
+	const prefix = k.slice(5, 7)
+	const suffix = k.slice(7, 9)
+	if (PIP_PREFIXES.includes(prefix)) return PIP_SUFFIXES.has(suffix)
+	if (DSK_PREFIXES.includes(prefix)) return DSK_SUFFIXES.has(suffix)
+	return false
 }
 
 module.exports = {

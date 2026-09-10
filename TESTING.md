@@ -93,15 +93,15 @@ Test preset buttons in Companion for:
 
 Test DSK Key Source, Fill Source, and Type preset buttons.
 
-## ⚠️ #13 — pnpkey_fade addresses (unverified)
+## ⚠️ #13 — pnpkey_fade addresses (doc-confirmed, live-unverified)
 
 Addresses `020305`–`020308` used for PiP fade enable/disable.
-Not confirmed against documentation.
+Confirmed against Roland Control Guide documentation; not yet verified against a live device.
 
-## ⚠️ #14 — aux_mute addresses (unverified)
+## ⚠️ #14 — aux_mute addresses (doc-confirmed, live-unverified)
 
 Addresses `012203`, `012503`, `012603` used for AUX mute.
-Not confirmed against documentation.
+Confirmed against Roland Control Guide documentation; not yet verified against a live device.
 
 ## ⚠️ #15 — TCP receive buffer (split/merged packets)
 
@@ -110,10 +110,12 @@ sends responses in multiple TCP segments or merges several responses into one
 packet. Test by connecting over a high-latency or congested network.
 Expected: auth succeeds, tally and variable values are always correct.
 
-Fix applied: buffer is now flushed only up to the last `;` — any trailing
-partial message (e.g. `DTH:001B` without closing `;`) is kept for the next
-TCP chunk instead of being discarded. Auth prompts (`Enter password:`,
-`Welcome to V-160HD.`) are matched by substring regardless of chunk boundaries.
+Fix applied: the parser processes delimiters (`;`, `\n`, auth prompts) in
+occurrence order. Each delimiter type is handled as soon as it is encountered
+rather than in a fixed type priority. Incomplete trailing messages are kept
+in the buffer for the next TCP chunk. 23 automated unit tests cover
+split packets, merged packets, interleaved delimiter types, and auth prompt
+edge cases.
 
 ## ⚠️ #16 — Memory names displayed correctly
 

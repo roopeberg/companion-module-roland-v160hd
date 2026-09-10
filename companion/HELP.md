@@ -88,12 +88,11 @@ The module exposes variables for all polled state. Key variables include:
 - `aux1_mute`, `aux2_mute`, `aux3_mute` — AUX mute state
 - `aux1link`, `aux2link`, `aux3link` — AUX link state
 - `hdmi1`, `hdmi2`, `hdmi3`, `sdi1`, `sdi2`, `sdi3`, `usb` — output assignments
-- `pnpkey1_source`–`pnpkey4_source` — PiP/Key source values (raw hex)
-- `pnpkey1sourcename`–`pnpkey4sourcename` — PiP/Key source labels
+- `pnpkey1_source`–`pnpkey4_source` — PiP/Key source label (human-readable name, requires polling)
 - `memoryname_1`–`memoryname_30` — memory slot names (populated during polling, ~15 s at 500 ms rate)
 - `lastmemorynumber`, `lastmemoryname` — last recalled memory slot
 - `freeze` — freeze state
-- `auxlinkmode` — AUX link mode
+- `auxlink_mode` — AUX link mode
 
 > **Note:** Variables that depend on polling (PGM/PVW source, AUX sources, memory names, etc.)
 > are only updated while polling is enabled. They will not reflect hardware panel changes

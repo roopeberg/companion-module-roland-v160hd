@@ -44,6 +44,19 @@ module.exports = {
 			self.socket.on('data', function (buffer) {
 				self.tcpBuffer += buffer.toString('utf8')
 
+				// Auth prompts have no reliable terminator — match them as soon as the
+				// full string is present anywhere in the buffer so TCP fragmentation
+				// cannot stall authentication.
+				const AUTH_PROMPTS = ['Enter password:', 'Welcome to V-160HD.']
+				for (const prompt of AUTH_PROMPTS) {
+					const idx = self.tcpBuffer.indexOf(prompt)
+					if (idx !== -1) {
+						self.tcpBuffer = self.tcpBuffer.slice(idx + prompt.length)
+						self.updateData(prompt)
+					}
+				}
+
+				// Newline-terminated lines (e.g. VER response).
 				let newline
 				while ((newline = self.tcpBuffer.indexOf('\n')) !== -1) {
 					const line = self.tcpBuffer.slice(0, newline + 1)

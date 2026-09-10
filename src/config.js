@@ -76,7 +76,7 @@ module.exports = {
 				type: 'textinput',
 				id: 'pollingrate',
 				label: 'Polling Rate (in ms)',
-				default: 1000,
+				default: 500,
 				width: 3,
 				isVisibleExpression: 'options.polling === true',
 			},

@@ -130,7 +130,7 @@ module.exports = {
 		if (self.config.polling) {
 			const MIN_RATE = 300
 			const MAX_RATE = 60000
-			const DEFAULT_RATE = 1000
+			const DEFAULT_RATE = 500
 			const raw = String(self.config.pollingrate ?? '').trim()
 			const parsed = /^\d+$/.test(raw) ? Number(raw) : NaN
 			const rate = Number.isFinite(parsed) ? Math.min(MAX_RATE, Math.max(MIN_RATE, parsed)) : DEFAULT_RATE

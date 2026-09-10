@@ -247,7 +247,7 @@ module.exports = {
 
 		if (data.trim() == 'Enter password:') {
 			self.updateStatus(InstanceStatus.Connecting, 'Authenticating')
-			self.log('info', 'Sending passcode: ' + self.config.password)
+			self.log('info', 'Sending passcode')
 			self.socket.send(self.config.password + '\n')
 		} else if (data.trim() == 'Welcome to V-160HD.') {
 			self.updateStatus(InstanceStatus.Ok)

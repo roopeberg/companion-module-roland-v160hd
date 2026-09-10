@@ -2710,8 +2710,9 @@ module.exports = {
 				},
 			],
 			callback: function (action) {
-				self.loadSnapshot(action.options.name)
-				setTimeout(() => self.applyPinp(action.options.pinp), 200)
+				if (self.loadSnapshot(action.options.name)) {
+					self.applyPinp(action.options.pinp)
+				}
 			},
 		}
 
@@ -2749,8 +2750,9 @@ module.exports = {
 				},
 			],
 			callback: function (action) {
-				self.loadSnapshot(action.options.name)
-				setTimeout(() => self.applyDsk(action.options.dsk), 200)
+				if (self.loadSnapshot(action.options.name)) {
+					self.applyDsk(action.options.dsk)
+				}
 			},
 		}
 

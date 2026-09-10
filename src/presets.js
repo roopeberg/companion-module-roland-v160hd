@@ -114,19 +114,19 @@ module.exports = {
 				for (const src of group.sources) {
 					const id = `${sectionId}_${src.pgmpvw_id}`
 					const feedbacks = [
-					{
-						feedbackId: 'bus_tally',
-						options: { bus: dest.bus, source: src.pgmpvw_id },
-						styleOverrides: bgOverride(dest.activeColor),
-					},
-				]
+						{
+							feedbackId: 'bus_tally',
+							options: { bus: dest.bus, source: src.pgmpvw_id },
+							styleOverrides: bgOverride(dest.activeColor),
+						},
+					]
 					presets[id] = preset(
 						`${dest.label}: ${src.label}`,
 						src.label,
 						DARK,
 						dest.actionId,
 						{ input: src.pgmpvw_id },
-						feedbacks
+						feedbacks,
 					)
 					sectionIds.push(id)
 				}
@@ -145,7 +145,9 @@ module.exports = {
 						name: `${aux.label}: ${src.label}`,
 						type: 'layered',
 						elements: layeredBtn(src.label, DARK),
-						steps: [{ down: [{ actionId: 'aux_assign', options: { aux: aux.aux_address, assign: src.pgmpvw_id } }], up: [] }],
+						steps: [
+							{ down: [{ actionId: 'aux_assign', options: { aux: aux.aux_address, assign: src.pgmpvw_id } }], up: [] },
+						],
 						feedbacks: [
 							{
 								feedbackId: 'bus_tally',
@@ -181,16 +183,28 @@ module.exports = {
 
 		// PiP Source presets (HDMI 1-8, SDI 1-8, Input 1-10)
 		const pipSources = [
-			...Array.from({ length: 8 }, (_, i) => ({ label: `H${i + 1}`, id: i.toString(16).padStart(2, '0').toUpperCase() })),
-			...Array.from({ length: 8 }, (_, i) => ({ label: `S${i + 1}`, id: (8 + i).toString(16).padStart(2, '0').toUpperCase() })),
-			...Array.from({ length: 10 }, (_, i) => ({ label: `IN${i + 1}`, id: (0x20 + i).toString(16).padStart(2, '0').toUpperCase() })),
+			...Array.from({ length: 8 }, (_, i) => ({
+				label: `H${i + 1}`,
+				id: i.toString(16).padStart(2, '0').toUpperCase(),
+			})),
+			...Array.from({ length: 8 }, (_, i) => ({
+				label: `S${i + 1}`,
+				id: (8 + i).toString(16).padStart(2, '0').toUpperCase(),
+			})),
+			...Array.from({ length: 10 }, (_, i) => ({
+				label: `IN${i + 1}`,
+				id: (0x20 + i).toString(16).padStart(2, '0').toUpperCase(),
+			})),
 		]
 		for (const p of pipTargets) {
 			const sectionId = `pip${p.n}_source`
 			const sectionIds = []
 			for (const src of pipSources) {
 				const id = `${sectionId}_${src.id}`
-				presets[id] = preset(`PiP ${p.n} Source: ${src.label}`, src.label, NAVY, 'pnpkey_setsource', { pinp: p.id, assign: src.id })
+				presets[id] = preset(`PiP ${p.n} Source: ${src.label}`, src.label, NAVY, 'pnpkey_setsource', {
+					pinp: p.id,
+					assign: src.id,
+				})
 				sectionIds.push(id)
 			}
 			addSection(sectionId, `PiP ${p.n} - Source`, sectionIds)
@@ -208,7 +222,10 @@ module.exports = {
 			const sectionIds = []
 			for (const t of pipTypes) {
 				const id = `${sectionId}_${t.id}`
-				presets[id] = preset(`PiP ${p.n} Type: ${t.label}`, `PiP${p.n}\n${t.label}`, TEAL, 'pnpkey_settype', { pinp: p.id, type: t.id })
+				presets[id] = preset(`PiP ${p.n} Type: ${t.label}`, `PiP${p.n}\n${t.label}`, TEAL, 'pnpkey_settype', {
+					pinp: p.id,
+					type: t.id,
+				})
 				sectionIds.push(id)
 			}
 			addSection(sectionId, `PiP ${p.n} - Type`, sectionIds)
@@ -225,7 +242,10 @@ module.exports = {
 			const sectionIds = []
 			for (const s of pipShapes) {
 				const id = `${sectionId}_${s.id}`
-				presets[id] = preset(`PiP ${p.n} Shape: ${s.label}`, `PiP${p.n}\n${s.label}`, TEAL, 'pnpkey_shape', { pinp: p.id, shape: s.id })
+				presets[id] = preset(`PiP ${p.n} Shape: ${s.label}`, `PiP${p.n}\n${s.label}`, TEAL, 'pnpkey_shape', {
+					pinp: p.id,
+					shape: s.id,
+				})
 				sectionIds.push(id)
 			}
 			addSection(sectionId, `PiP ${p.n} - Shape`, sectionIds)
@@ -249,7 +269,10 @@ module.exports = {
 			const sectionIds = []
 			for (const c of pipBorderColors) {
 				const id = `${sectionId}_${c.id}`
-				presets[id] = preset(`PiP ${p.n} Border: ${c.label}`, `PiP${p.n}\n${c.label}`, DARK, 'pnpkey_borderColor', { pinp: p.id, color: c.id })
+				presets[id] = preset(`PiP ${p.n} Border: ${c.label}`, `PiP${p.n}\n${c.label}`, DARK, 'pnpkey_borderColor', {
+					pinp: p.id,
+					color: c.id,
+				})
 				sectionIds.push(id)
 			}
 			addSection(sectionId, `PiP ${p.n} - Border Color`, sectionIds)
@@ -289,7 +312,10 @@ module.exports = {
 			const sectionIds = []
 			for (const src of dskSources) {
 				const id = `${sectionId}_${src.intId}`
-				presets[id] = preset(`DSK ${d.n} Key Src: ${src.label}`, src.label, NAVY, 'set_dsk_key_source', { dsk: d.intId, assign: src.intId })
+				presets[id] = preset(`DSK ${d.n} Key Src: ${src.label}`, src.label, NAVY, 'set_dsk_key_source', {
+					dsk: d.intId,
+					assign: src.intId,
+				})
 				sectionIds.push(id)
 			}
 			addSection(sectionId, `DSK ${d.n} - Key Source`, sectionIds)
@@ -300,7 +326,10 @@ module.exports = {
 			const sectionIds = []
 			for (const src of dskSources) {
 				const id = `${sectionId}_${src.intId}`
-				presets[id] = preset(`DSK ${d.n} Fill Src: ${src.label}`, src.label, NAVY, 'set_dsk_fill_source', { dsk: d.intId, assign: src.intId })
+				presets[id] = preset(`DSK ${d.n} Fill Src: ${src.label}`, src.label, NAVY, 'set_dsk_fill_source', {
+					dsk: d.intId,
+					assign: src.intId,
+				})
 				sectionIds.push(id)
 			}
 			addSection(sectionId, `DSK ${d.n} - Fill Source`, sectionIds)
@@ -317,7 +346,10 @@ module.exports = {
 			const sectionIds = []
 			for (const t of dskTypes) {
 				const id = `${sectionId}_${t.id}`
-				presets[id] = preset(`DSK ${d.n} Type: ${t.label}`, `DSK${d.n}\n${t.label}`, TEAL, 'set_dsk_type', { dsk: d.intId, key: t.id })
+				presets[id] = preset(`DSK ${d.n} Type: ${t.label}`, `DSK${d.n}\n${t.label}`, TEAL, 'set_dsk_type', {
+					dsk: d.intId,
+					key: t.id,
+				})
 				sectionIds.push(id)
 			}
 			addSection(sectionId, `DSK ${d.n} - Type`, sectionIds)
@@ -382,7 +414,7 @@ module.exports = {
 					`${slot.label}\nPiP${p.n}`,
 					LOAD_COLOR,
 					'load_and_apply_pinp_snapshot',
-					{ name: slot.name, pinp: p.id }
+					{ name: slot.name, pinp: p.id },
 				)
 				sectionIds.push(id)
 			}
@@ -399,7 +431,7 @@ module.exports = {
 					`${slot.label}\nDSK${d.n}`,
 					LOAD_COLOR,
 					'load_and_apply_dsk_snapshot',
-					{ name: slot.name, dsk: d.id }
+					{ name: slot.name, dsk: d.id },
 				)
 				sectionIds.push(id)
 			}

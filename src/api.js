@@ -721,13 +721,29 @@ module.exports = {
 		}
 	},
 
+	validateSnapshotName: function (name) {
+		return typeof name === 'string' && /^[A-Za-z0-9_-]+$/.test(name)
+	},
+
+	resolveSnapshotFile: function (name) {
+		const file = path.resolve(SNAPSHOT_DIR, `${name}.json`)
+		if (!file.startsWith(SNAPSHOT_DIR + path.sep) && file !== SNAPSHOT_DIR) {
+			throw new Error(`Snapshot path traversal denied: ${name}`)
+		}
+		return file
+	},
+
 	saveSnapshot: function (name) {
 		let self = this
+		if (!self.validateSnapshotName(name)) {
+			self.log('error', `Invalid snapshot name: ${name}`)
+			return
+		}
 		try {
 			if (!fs.existsSync(SNAPSHOT_DIR)) {
 				fs.mkdirSync(SNAPSHOT_DIR, { recursive: true })
 			}
-			const file = path.join(SNAPSHOT_DIR, `${name}.json`)
+			const file = self.resolveSnapshotFile(name)
 			const data = {
 				name,
 				savedAt: new Date().toISOString(),
@@ -744,25 +760,32 @@ module.exports = {
 
 	loadSnapshot: function (name) {
 		let self = this
+		if (!self.validateSnapshotName(name)) {
+			self.log('error', `Invalid snapshot name: ${name}`)
+			return false
+		}
 		try {
-			const file = path.join(SNAPSHOT_DIR, `${name}.json`)
+			const file = self.resolveSnapshotFile(name)
 			if (!fs.existsSync(file)) {
 				self.log('error', `Snapshot not found: ${file}`)
-				return
+				return false
 			}
 			const raw = fs.readFileSync(file, 'utf8')
 			const snap = JSON.parse(raw)
 			Object.assign(self.DATA, snap.data)
 			self.log('info', `Snapshot loaded: ${name} (saved ${snap.savedAt})`)
+			return true
 		} catch (err) {
 			self.log('error', `Load snapshot failed: ${err.message}`)
+			return false
 		}
 	},
 
 	listSnapshots: function () {
 		try {
 			if (!fs.existsSync(SNAPSHOT_DIR)) return []
-			return fs.readdirSync(SNAPSHOT_DIR)
+			return fs
+				.readdirSync(SNAPSHOT_DIR)
 				.filter((f) => f.endsWith('.json'))
 				.map((f) => f.replace(/\.json$/, ''))
 		} catch {
@@ -772,8 +795,12 @@ module.exports = {
 
 	deleteSnapshot: function (name) {
 		let self = this
+		if (!self.validateSnapshotName(name)) {
+			self.log('error', `Invalid snapshot name: ${name}`)
+			return
+		}
 		try {
-			const file = path.join(SNAPSHOT_DIR, `${name}.json`)
+			const file = self.resolveSnapshotFile(name)
 			if (!fs.existsSync(file)) {
 				self.log('warn', `Snapshot not found: ${file}`)
 				return

@@ -484,11 +484,16 @@ module.exports = {
 			],
 			callback: function (feedback) {
 				let opt = feedback.options
-				let busKey = opt.bus === 'pgm' ? 'pgm_source'
-					: opt.bus === 'pvw' ? 'pvw_source'
-					: opt.bus === 'aux1' ? 'aux1source'
-					: opt.bus === 'aux2' ? 'aux2source'
-					: 'aux3source'
+				let busKey =
+					opt.bus === 'pgm'
+						? 'pgm_source'
+						: opt.bus === 'pvw'
+							? 'pvw_source'
+							: opt.bus === 'aux1'
+								? 'aux1source'
+								: opt.bus === 'aux2'
+									? 'aux2source'
+									: 'aux3source'
 				return self.DATA[busKey] == opt.source
 			},
 		}

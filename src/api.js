@@ -10,6 +10,13 @@ module.exports = {
 	initConnection: function () {
 		let self = this
 
+		// Stop polling before tearing down the socket so no commands are sent
+		// to a dead or not-yet-authenticated connection.
+		if (self.INTERVAL !== undefined) {
+			clearInterval(self.INTERVAL)
+			self.INTERVAL = undefined
+		}
+
 		if (self.socket !== undefined) {
 			self.socket.destroy()
 			delete self.socket
@@ -23,6 +30,7 @@ module.exports = {
 
 		if (self.config.host) {
 			self.log('info', `Opening connection to ${self.config.host}:${self.config.port}`)
+			self.updateStatus(InstanceStatus.Connecting, 'Connecting')
 
 			self.socket = new TCPHelper(self.config.host, self.config.port)
 
@@ -32,12 +40,28 @@ module.exports = {
 				}
 
 				clearInterval(self.INTERVAL)
+				self.INTERVAL = undefined
 				self.handleError(err)
 			})
 
 			self.socket.on('connect', function () {
-				self.log('info', 'Connected')
-				self.updateStatus(InstanceStatus.Ok)
+				self.log('info', 'Connected — waiting for auth prompt')
+				self.updateStatus(InstanceStatus.Connecting, 'Authenticating')
+			})
+
+			self.socket.on('end', function () {
+				self.log('warn', 'Connection closed by device')
+				clearInterval(self.INTERVAL)
+				self.INTERVAL = undefined
+				self.updateStatus(InstanceStatus.ConnectionFailure, 'Connection Closed')
+				self.startReconnectInterval()
+			})
+
+			self.socket.on('close', function () {
+				if (self.INTERVAL !== undefined) {
+					clearInterval(self.INTERVAL)
+					self.INTERVAL = undefined
+				}
 			})
 
 			self.tcpBuffer = ''
@@ -96,7 +120,12 @@ module.exports = {
 			})
 
 			if (!printedError) {
-				self.log('error', `Error: ${error}`)
+				self.log('error', `Network error: ${error}`)
+				self.updateStatus(InstanceStatus.ConnectionFailure, 'Network Error')
+				if (self.socket !== undefined) {
+					self.socket.destroy()
+				}
+				self.startReconnectInterval()
 			}
 		} catch (error) {
 			self.log('error', 'Error handling error: ' + error)

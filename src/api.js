@@ -500,26 +500,25 @@ module.exports = {
 												}
 
 												if (param1 == '60') {
-													//memory names
+													//memory names — 8 chars, each arrives as a separate message
+													//value is a 1-byte hex string (e.g. "41" = 'A')
 													let memoryNumber = parseInt(param2, 16)
 													let memoryCharIndex = parseInt(param3, 16)
+													let char = String.fromCharCode(parseInt(value, 16))
 
-													//there are 8 characters in each memory name and they will all come in as individual messages
-													//and not necessarily in order
-													let memoryName = self.DATA[`memory${memoryNumber}`]
-													if (memoryName === undefined) {
-														memoryName = ''
+													let memoryName = self.DATA[`memory${memoryNumber}`] || '        '
+													if (memoryName.length < 8) {
+														memoryName = memoryName.padEnd(8, ' ')
 													}
 
-													//value is the character, put it in the correct spot in the memory name based on the memoryCharIndex
 													memoryName =
-														memoryName.substring(0, memoryCharIndex * 2) +
-														value +
-														memoryName.substring(memoryCharIndex * 2 + 1) //replace the character at the index
+														memoryName.substring(0, memoryCharIndex) +
+														char +
+														memoryName.substring(memoryCharIndex + 1)
 
 													self.DATA[`memory${memoryNumber}`] = memoryName
 													let variableObj = {}
-													variableObj[`memoryname_${memoryNumber + 1}`] = memoryName
+													variableObj[`memoryname_${memoryNumber + 1}`] = memoryName.trimEnd()
 													self.setVariableValues(variableObj)
 												}
 

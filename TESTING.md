@@ -123,7 +123,7 @@ Memory names are fetched one slot (8 RQH commands) per poll cycle, cycling
 through all 30 slots. At 1 s polling, all 30 names populate within ~30 s.
 Memory names are not fetched at all when polling is disabled.
 
-1. Enable polling (≥ 250 ms rate)
+1. Enable polling (≥ 300 ms rate)
 2. Assign names to memories 1–5 on the device
 3. Connect module and wait ~30 s — names should appear in variables `memoryname_1` … `memoryname_5`
 4. Verify the names show actual text (not hex digits like `41 42 43`)

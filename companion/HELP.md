@@ -107,6 +107,10 @@ All preset buttons use the Companion 5 layered graphics system with fixed font s
   - **Load + Apply to PiP 1–4** (5 slots each)
   - **Load + Apply to DSK 1–2** (5 slots each)
 
+### Snapshot security
+
+Snapshot names are validated: only letters, numbers, underscores and hyphens are accepted (`[A-Za-z0-9_-]`). The module verifies that the resolved file path stays inside `~/v160hd-snapshots/` — directory traversal via the name field is not possible.
+
 ### Snapshot workflow
 
 1. Set up PiP or DSK parameters on the device

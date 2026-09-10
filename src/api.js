@@ -538,9 +538,7 @@ module.exports = {
 													}
 
 													memoryName =
-														memoryName.substring(0, memoryCharIndex) +
-														char +
-														memoryName.substring(memoryCharIndex + 1)
+														memoryName.substring(0, memoryCharIndex) + char + memoryName.substring(memoryCharIndex + 1)
 
 													self.DATA[`memory${memoryNumber}`] = memoryName
 													let variableObj = {}

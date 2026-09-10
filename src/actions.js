@@ -165,6 +165,13 @@ module.exports = {
 
 				let value = options.assign
 				self.sendCommand(address, value)
+
+				const auxKeyMap = { '000011': 'aux1source', '00002E': 'aux2source', '00002F': 'aux3source' }
+				const dataKey = auxKeyMap[address]
+				if (dataKey) {
+					self.DATA[dataKey] = value
+					self.checkFeedbacks('bus_tally')
+				}
 			},
 		}
 

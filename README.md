@@ -23,13 +23,13 @@ Bitfocus Companion module for the **Roland V-160HD** HD video switcher.
 
 ## Configuration
 
-| Setting       | Value                              |
-| ------------- | ---------------------------------- |
-| Host          | IP address of the V-160HD          |
-| Port          | 8023 (fixed)                       |
-| Password      | Must match the switcher's password |
-| Polling       | Enable to receive state updates    |
-| Polling rate  | ms between polls (minimum 250 ms)  |
+| Setting      | Value                              |
+| ------------ | ---------------------------------- |
+| Host         | IP address of the V-160HD          |
+| Port         | 8023 (fixed)                       |
+| Password     | Must match the switcher's password |
+| Polling      | Enable to receive state updates    |
+| Polling rate | ms between polls (300–30 000 ms)   |
 
 **Note:** The V-160HD accepts only one TCP connection at a time. Disconnect
 any other control software before connecting this module.

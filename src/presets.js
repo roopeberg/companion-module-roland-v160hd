@@ -7,7 +7,6 @@ module.exports = {
 		const WHITE = combineRgb(255, 255, 255)
 		const RED = combineRgb(204, 0, 0)
 		const GREEN = combineRgb(0, 180, 0)
-		const ORANGE = combineRgb(210, 120, 0)
 		const AMBER_DIM = combineRgb(60, 32, 0)
 		const AMBER = combineRgb(210, 120, 0)
 		const CYAN_DIM = combineRgb(0, 40, 48)

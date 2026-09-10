@@ -128,9 +128,13 @@ module.exports = {
 		}
 
 		if (self.config.polling) {
-			const MIN_RATE = 250
-			const rate = Math.max(MIN_RATE, parseInt(self.config.pollingrate) || 1000)
-			if (rate !== parseInt(self.config.pollingrate)) {
+			const MIN_RATE = 300
+			const MAX_RATE = 60000
+			const DEFAULT_RATE = 1000
+			const raw = String(self.config.pollingrate ?? '').trim()
+			const parsed = /^\d+$/.test(raw) ? Number(raw) : NaN
+			const rate = Number.isFinite(parsed) ? Math.min(MAX_RATE, Math.max(MIN_RATE, parsed)) : DEFAULT_RATE
+			if (rate !== parsed) {
 				self.log('warn', `Polling rate clamped to ${rate} ms (was '${self.config.pollingrate}')`)
 			}
 			self.log('info', `Starting Update Interval: Fetching new data from Device every ${rate}ms.`)

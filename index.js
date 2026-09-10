@@ -32,7 +32,6 @@ class v160Instance extends InstanceBase {
 		})
 
 		this.INTERVAL = null //used for polling device for feedbacks
-		this.RECONNECT_INTERVAL = 30000 //used for reconnecting to device
 
 		this.MODEL = 'V-160HD'
 		this.VERSION = ''
@@ -62,7 +61,6 @@ class v160Instance extends InstanceBase {
 			}
 
 			clearInterval(this.INTERVAL)
-			clearInterval(this.RECONNECT_INTERVAL)
 
 			this.log('debug', 'destroy')
 		} catch (error) {

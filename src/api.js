@@ -32,7 +32,10 @@ module.exports = {
 			self.log('info', `Opening connection to ${self.config.host}:${self.config.port}`)
 			self.updateStatus(InstanceStatus.Connecting, 'Connecting')
 
-			self.socket = new TCPHelper(self.config.host, self.config.port)
+			self.socket = new TCPHelper(self.config.host, self.config.port, {
+				reconnect: true,
+				reconnect_interval: 30000,
+			})
 
 			self.socket.on('error', function (err) {
 				if (self.config.verbose) {
@@ -46,22 +49,15 @@ module.exports = {
 
 			self.socket.on('connect', function () {
 				self.log('info', 'Connected — waiting for auth prompt')
+				self.tcpBuffer = ''
 				self.updateStatus(InstanceStatus.Connecting, 'Authenticating')
 			})
 
 			self.socket.on('end', function () {
-				self.log('warn', 'Connection closed by device')
+				self.log('warn', 'Connection closed by device — TCPHelper will reconnect in 30 s')
 				clearInterval(self.INTERVAL)
 				self.INTERVAL = undefined
 				self.updateStatus(InstanceStatus.ConnectionFailure, 'Connection Closed')
-				self.startReconnectInterval()
-			})
-
-			self.socket.on('close', function () {
-				if (self.INTERVAL !== undefined) {
-					clearInterval(self.INTERVAL)
-					self.INTERVAL = undefined
-				}
 			})
 
 			self.tcpBuffer = ''
@@ -92,29 +88,17 @@ module.exports = {
 						self.log('error', error)
 						self.updateStatus(InstanceStatus.ConnectionFailure, 'Connection Refused')
 						printedError = true
-						if (self.socket !== undefined) {
-							self.socket.destroy()
-						}
-						self.startReconnectInterval()
 					} else if (err[key] === 'ETIMEDOUT') {
 						error =
 							'Unable to communicate with Device. Connection timed out. Is this the right IP address? Is it still online?'
 						self.log('error', error)
 						self.updateStatus(InstanceStatus.ConnectionFailure, 'Connection Timed Out')
 						printedError = true
-						if (self.socket !== undefined) {
-							self.socket.destroy()
-						}
-						self.startReconnectInterval()
 					} else if (err[key] === 'ECONNRESET') {
 						error = 'The connection was reset. Check the log for more error information.'
 						self.log('error', error)
 						self.updateStatus(InstanceStatus.ConnectionFailure, 'Connection Reset')
 						printedError = true
-						if (self.socket !== undefined) {
-							self.socket.destroy()
-						}
-						self.startReconnectInterval()
 					}
 				}
 			})
@@ -122,30 +106,11 @@ module.exports = {
 			if (!printedError) {
 				self.log('error', `Network error: ${error}`)
 				self.updateStatus(InstanceStatus.ConnectionFailure, 'Network Error')
-				if (self.socket !== undefined) {
-					self.socket.destroy()
-				}
-				self.startReconnectInterval()
 			}
 		} catch (error) {
 			self.log('error', 'Error handling error: ' + error)
 			self.log('error', 'Error: ' + String(err))
 		}
-	},
-
-	startReconnectInterval: function () {
-		let self = this
-
-		self.updateStatus(InstanceStatus.ConnectionFailure, 'Reconnecting')
-
-		if (self.RECONNECT_INTERVAL !== undefined) {
-			clearInterval(self.RECONNECT_INTERVAL)
-			self.RECONNECT_INTERVAL = undefined
-		}
-
-		self.log('info', 'Attempting to reconnect in 30 seconds...')
-
-		self.RECONNECT_INTERVAL = setTimeout(self.initConnection.bind(this), 30000)
 	},
 
 	startInterval: function () {
@@ -316,7 +281,7 @@ module.exports = {
 					let dataSuffix = ''
 
 					if (dataSet.length > 1) {
-						if (dataSet[1].toString().indexOf(',')) {
+						if (dataSet[1].toString().includes(',')) {
 							dataSuffix = dataSet[1].toString().split(',')
 
 							if (dataPrefix.indexOf('VER') > -1) {

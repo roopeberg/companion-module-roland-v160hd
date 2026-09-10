@@ -1,5 +1,10 @@
 module.exports = [
 	function (_context, _props) {
-		return false
+		return {
+			updatedConfig: null,
+			updatedSecrets: null,
+			updatedActions: [],
+			updatedFeedbacks: [],
+		}
 	},
 ]

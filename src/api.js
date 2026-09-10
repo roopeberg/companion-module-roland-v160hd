@@ -143,7 +143,7 @@ module.exports = {
 			const raw = String(self.config.pollingrate ?? '').trim()
 			const parsed = /^\d+$/.test(raw) ? Number(raw) : NaN
 			const rate = Number.isFinite(parsed) ? Math.min(MAX_RATE, Math.max(MIN_RATE, parsed)) : DEFAULT_RATE
-			if (rate !== parsed) {
+			if (raw !== '' && rate !== parsed) {
 				self.log('warn', `Polling rate clamped to ${rate} ms (was '${self.config.pollingrate}')`)
 			}
 			self.log('info', `Starting Update Interval: Fetching new data from Device every ${rate}ms.`)
@@ -321,14 +321,10 @@ module.exports = {
 										//subscribe tally message
 										self.logVerbose('Received Subscribe Tally Message')
 										let index = 0
-										let halfLength = value.length / 2
+										const halfLength = value.length / 2
 										for (let t = 0; t < halfLength; t++) {
-											let input = halfLength - (halfLength - t)
-											input = input.toString(16).padStart(2, '0').toUpperCase()
-
-											let tallyState = value[index] + value[index + 1]
-											tallyState = tallyState.toString(16).padStart(2, '0').toUpperCase()
-
+											const input = t.toString(16).padStart(2, '0').toUpperCase()
+											const tallyState = value[index] + value[index + 1]
 											self.updateTally(input, tallyState)
 
 											index = index + 2
@@ -402,8 +398,7 @@ module.exports = {
 											}
 										} else {
 											//other data
-											self.DATA[`data_${param1}${param2}${param3}`] = value //this should take care of all requested data
-											self.DATA[`data_${param2}${param3}`] = value //this should take care of all requested data
+											self.DATA[`data_${param2}${param3}`] = value
 										}
 									}
 

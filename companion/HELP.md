@@ -73,16 +73,31 @@ The switcher should be running firmware 1.04 or higher. A password must be set o
 
 ## Feedbacks
 
-- **Bus Tally (per bus)** — true when a given source is active on a specific bus (PGM, PVW, AUX1–3). Each bus is tracked independently: PGM tally only lights up when the source is on PGM, not when it is on an AUX bus. PGM and PVW sources are polled at startup and updated on every Companion command.
+- **Bus Tally (per bus)** — true when a given source is active on a specific bus (PGM, PVW, AUX1–3). Each bus is tracked independently: PGM tally only lights up when the source is on PGM, not when it is on an AUX bus. PGM, PVW and AUX sources are polled every interval (requires polling enabled) and updated immediately when Companion sends a select command.
 - **Tally State** — legacy combined tally (PGM+AUX composite push from device). Kept for backwards compatibility; prefer Bus Tally for new buttons.
 - **PnP/Key On Air State** — highlights a button when a PiP/Key channel is active
 - **Snapshot File Exists** — true when a named snapshot file is present on disk. Used by Save/Clear preset buttons to indicate whether a slot is occupied.
 
 ## Variables
 
-- Model
-- Version
-- Tally States
+The module exposes variables for all polled state. Key variables include:
+
+- `model`, `version` — device firmware info (set at connect)
+- `pgm_source`, `pvw_source` — current PGM / PVW source label (requires polling)
+- `aux1source`, `aux2source`, `aux3source` — AUX source labels (requires polling)
+- `aux1mute`, `aux2mute`, `aux3mute` — AUX mute state
+- `aux1link`, `aux2link`, `aux3link` — AUX link state
+- `hdmi1assign`–`hdmi3assign`, `sdi1assign`–`sdi3assign`, `usbassign` — output assignments
+- `pnpkey1source`–`pnpkey4source` — PiP/Key source values
+- `pnpkey1sourcename`–`pnpkey4sourcename` — PiP/Key source labels
+- `memoryname_1`–`memoryname_30` — memory slot names (populated during polling, ~30 s at 500 ms rate)
+- `lastmemorynumber`, `lastmemoryname` — last recalled memory slot
+- `freeze` — freeze state
+- `auxlinkmode` — AUX link mode
+
+> **Note:** Variables that depend on polling (PGM/PVW source, AUX sources, memory names, etc.)
+> are only updated while polling is enabled. They will not reflect hardware panel changes
+> if polling is disabled.
 
 ## Presets
 

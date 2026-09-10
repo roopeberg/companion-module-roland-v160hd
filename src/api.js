@@ -550,7 +550,7 @@ module.exports = {
 											//update variables
 											let variableObj = {}
 											variableObj['lastmemorynumber'] = self.DATA.lastMemory
-											variableObj['lastmemoryname'] = memoryName
+											variableObj['lastmemoryname'] = memoryName ? memoryName.trimEnd() : ''
 											self.setVariableValues(variableObj)
 										}
 									}

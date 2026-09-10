@@ -135,11 +135,14 @@ Memory names are not fetched at all when polling is disabled.
 2. Open Companion connection settings and save without changes
 3. Monitor device traffic — poll rate should remain ~1/s, not double or triple
 
-## ⚠️ #18 — Polling rate clamped to minimum 250 ms
+## ⚠️ #18 — Polling rate validation
 
-1. Set polling rate to `0`, empty, or a non-numeric value
-2. Save settings — Companion log should show a warning and use 250 ms
-3. Monitor device traffic — poll rate should be 250 ms, not 0/1 ms
+Valid range: 300–30 000 ms. Default when omitted or invalid: 500 ms.
+
+1. Set polling rate to `0`, empty, or a non-numeric value (e.g. `abc`)
+2. Save settings — Companion log should show a warning and use 500 ms
+3. Set polling rate to `100` — log should show clamped to 300 ms
+4. Monitor device traffic — poll rate should match the clamped value
 
 ## ✅ #19 — Password not logged
 

@@ -6,6 +6,14 @@ const os = require('os')
 
 const SNAPSHOT_DIR = path.join(os.homedir(), 'v160hd-snapshots')
 
+// Keys in DATA that belong to PiP (1B–1E) and DSK (1F–20) capture.
+// Only these are persisted to / restored from snapshot files so that
+// live state (PGM/PVW source, AUX, mute, outputs …) is never overwritten.
+const SNAPSHOT_PREFIXES = ['1B', '1C', '1D', '1E', '1F', '20']
+function isCaptureKey(k) {
+	return k.startsWith('data_') && SNAPSHOT_PREFIXES.some((p) => k.startsWith(`data_${p}`))
+}
+
 module.exports = {
 	initConnection: function () {
 		let self = this
@@ -32,12 +40,16 @@ module.exports = {
 			self.log('info', `Opening connection to ${self.config.host}:${self.config.port}`)
 			self.updateStatus(InstanceStatus.Connecting, 'Connecting')
 
-			self.socket = new TCPHelper(self.config.host, self.config.port, {
+			// Capture the socket in a local const so late-firing events from a
+			// destroyed socket cannot affect a newer socket assigned to self.socket.
+			const socket = new TCPHelper(self.config.host, self.config.port, {
 				reconnect: true,
 				reconnect_interval: 30000,
 			})
+			self.socket = socket
 
-			self.socket.on('error', function (err) {
+			socket.on('error', function (err) {
+				if (socket !== self.socket) return
 				if (self.config.verbose) {
 					self.log('warn', 'Error: ' + err)
 				}
@@ -47,13 +59,15 @@ module.exports = {
 				self.handleError(err)
 			})
 
-			self.socket.on('connect', function () {
+			socket.on('connect', function () {
+				if (socket !== self.socket) return
 				self.log('info', 'Connected — waiting for auth prompt')
 				self.tcpBuffer = ''
 				self.updateStatus(InstanceStatus.Connecting, 'Authenticating')
 			})
 
-			self.socket.on('end', function () {
+			socket.on('end', function () {
+				if (socket !== self.socket) return
 				self.log('warn', 'Connection closed by device — TCPHelper will reconnect in 30 s')
 				clearInterval(self.INTERVAL)
 				self.INTERVAL = undefined
@@ -62,7 +76,8 @@ module.exports = {
 
 			self.tcpBuffer = ''
 
-			self.socket.on('data', function (buffer) {
+			socket.on('data', function (buffer) {
+				if (socket !== self.socket) return
 				self.tcpBuffer += buffer.toString('utf8')
 				const { messages, remaining } = extractMessages(self.tcpBuffer)
 				self.tcpBuffer = remaining
@@ -743,7 +758,7 @@ module.exports = {
 				name,
 				savedAt: new Date().toISOString(),
 				device: self.config.host,
-				data: { ...self.DATA },
+				data: Object.fromEntries(Object.entries(self.DATA).filter(([k]) => isCaptureKey(k))),
 			}
 			fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8')
 			self.log('info', `Snapshot saved: ${file}`)
@@ -767,7 +782,9 @@ module.exports = {
 			}
 			const raw = fs.readFileSync(file, 'utf8')
 			const snap = JSON.parse(raw)
-			Object.assign(self.DATA, snap.data)
+			for (const [k, v] of Object.entries(snap.data)) {
+				if (isCaptureKey(k)) self.DATA[k] = v
+			}
 			self.log('info', `Snapshot loaded: ${name} (saved ${snap.savedAt})`)
 			return true
 		} catch (err) {

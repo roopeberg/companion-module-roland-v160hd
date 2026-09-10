@@ -152,7 +152,7 @@ Verified: `self.log('info', 'Sending passcode')` no longer includes the password
 
 ## Notes
 
-- **Unit tests**: There are no automated tests for the TCP parser or snapshot round-trips.
-  The CI build verifies that the module builds and starts, not all TCP fragmentation cases.
-  Edge-case testing (split auth prompts, interleaved semicolons) must be done manually
-  or via a protocol simulator.
+- **Unit tests**: `npm test` runs 23 automated tests for the TCP parser
+  (`test/tcpParser.test.js`), covering split packets, merged packets, auth prompts,
+  interleaved message types, and delimiter-ordering edge cases.
+  Snapshot round-trips and live-device protocol flows still require manual testing.

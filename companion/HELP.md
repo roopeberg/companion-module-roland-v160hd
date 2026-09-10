@@ -84,13 +84,13 @@ The module exposes variables for all polled state. Key variables include:
 
 - `model`, `version` — device firmware info (set at connect)
 - `pgm_source`, `pvw_source` — current PGM / PVW source label (requires polling)
-- `aux1source`, `aux2source`, `aux3source` — AUX source labels (requires polling)
-- `aux1mute`, `aux2mute`, `aux3mute` — AUX mute state
+- `aux1`, `aux2`, `aux3` — AUX source labels (requires polling)
+- `aux1_mute`, `aux2_mute`, `aux3_mute` — AUX mute state
 - `aux1link`, `aux2link`, `aux3link` — AUX link state
-- `hdmi1assign`–`hdmi3assign`, `sdi1assign`–`sdi3assign`, `usbassign` — output assignments
-- `pnpkey1source`–`pnpkey4source` — PiP/Key source values
+- `hdmi1`, `hdmi2`, `hdmi3`, `sdi1`, `sdi2`, `sdi3`, `usb` — output assignments
+- `pnpkey1_source`–`pnpkey4_source` — PiP/Key source values (raw hex)
 - `pnpkey1sourcename`–`pnpkey4sourcename` — PiP/Key source labels
-- `memoryname_1`–`memoryname_30` — memory slot names (populated during polling, ~30 s at 500 ms rate)
+- `memoryname_1`–`memoryname_30` — memory slot names (populated during polling, ~15 s at 500 ms rate)
 - `lastmemorynumber`, `lastmemoryname` — last recalled memory slot
 - `freeze` — freeze state
 - `auxlinkmode` — AUX link mode

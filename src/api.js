@@ -617,10 +617,24 @@ module.exports = {
 
 	capturePinp: function (pinp) {
 		let self = this
-		// Request all window + view parameters for this PiP channel
-		const suffixes = ['02', '03', '04', '06', '08', '0A', '0C', '0E', '0F', '10', '11', '13', '15']
-		for (const s of suffixes) {
-			self.sendRawCommand(`RQH:00${pinp}${s},000001;`)
+		// 1-byte params use size 000001, 2-byte params use 000002
+		const params = [
+			{ s: '02', n: '000001' }, // source
+			{ s: '03', n: '000001' }, // type
+			{ s: '04', n: '000002' }, // position H
+			{ s: '06', n: '000002' }, // position V
+			{ s: '08', n: '000002' }, // size
+			{ s: '0A', n: '000002' }, // cropping H
+			{ s: '0C', n: '000002' }, // cropping V
+			{ s: '0E', n: '000001' }, // shape
+			{ s: '0F', n: '000001' }, // border color
+			{ s: '10', n: '000001' }, // border width
+			{ s: '11', n: '000002' }, // view position H
+			{ s: '13', n: '000002' }, // view position V
+			{ s: '15', n: '000002' }, // zoom
+		]
+		for (const p of params) {
+			self.sendRawCommand(`RQH:00${pinp}${p.s},${p.n};`)
 		}
 		setTimeout(() => self.checkVariables(), 500)
 	},
@@ -653,9 +667,20 @@ module.exports = {
 
 	captureDsk: function (dsk) {
 		let self = this
-		const suffixes = ['03', '04', '05']
-		for (const s of suffixes) {
-			self.sendRawCommand(`RQH:00${dsk}${s},000001;`)
+		// 1-byte params use size 000001, 2-byte params (LEVEL) use 000002
+		const params = [
+			{ s: '00', n: '000001' }, // pgm sw
+			{ s: '01', n: '000001' }, // pvw sw
+			{ s: '02', n: '000001' }, // mode
+			{ s: '03', n: '000001' }, // key source
+			{ s: '04', n: '000001' }, // fill source
+			{ s: '05', n: '000001' }, // type
+			{ s: '06', n: '000002' }, // level (14-bit)
+			{ s: '07', n: '000001' }, // gain
+			{ s: '09', n: '000001' }, // mix level
+		]
+		for (const p of params) {
+			self.sendRawCommand(`RQH:00${dsk}${p.s},${p.n};`)
 		}
 		setTimeout(() => self.checkVariables(), 500)
 	},
@@ -663,9 +688,15 @@ module.exports = {
 	applyDsk: function (dsk) {
 		let self = this
 		const params = [
+			{ suffix: '00', key: `data_${dsk}00` }, // pgm sw
+			{ suffix: '01', key: `data_${dsk}01` }, // pvw sw
+			{ suffix: '02', key: `data_${dsk}02` }, // mode
 			{ suffix: '03', key: `data_${dsk}03` }, // key source
 			{ suffix: '04', key: `data_${dsk}04` }, // fill source
 			{ suffix: '05', key: `data_${dsk}05` }, // type
+			{ suffix: '06', key: `data_${dsk}06` }, // level (2 bytes)
+			{ suffix: '07', key: `data_${dsk}07` }, // gain
+			{ suffix: '09', key: `data_${dsk}09` }, // mix level
 		]
 		for (const p of params) {
 			const val = self.DATA[p.key]

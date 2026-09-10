@@ -107,6 +107,10 @@ sends responses in multiple TCP segments or merges several responses into one
 packet. Test by connecting over a high-latency or congested network.
 Expected: auth succeeds, tally and variable values are always correct.
 
+Fix applied: buffer is now flushed only up to the last `;` — any trailing
+partial message (e.g. `DTH:001B` without closing `;`) is kept for the next
+TCP chunk instead of being discarded.
+
 ## ⚠️ #16 — Memory names displayed correctly
 
 1. Assign names to memories 1–5 on the device

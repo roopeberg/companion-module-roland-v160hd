@@ -52,10 +52,11 @@ module.exports = {
 				}
 
 				// Roland protocol uses ';' as message terminator for DTH/RQH responses.
-				// Flush any complete semicolon-terminated chunk not yet ended by newline.
-				if (self.tcpBuffer.includes(';')) {
-					const chunk = self.tcpBuffer
-					self.tcpBuffer = ''
+				// Process only up to the last ';' so any partial trailing message is kept for the next chunk.
+				const lastSemi = self.tcpBuffer.lastIndexOf(';')
+				if (lastSemi !== -1) {
+					const chunk = self.tcpBuffer.slice(0, lastSemi + 1)
+					self.tcpBuffer = self.tcpBuffer.slice(lastSemi + 1)
 					self.updateData(chunk)
 				}
 			})

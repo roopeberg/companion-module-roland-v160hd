@@ -170,9 +170,7 @@ module.exports = {
 		self.getFreezeData()
 		self.getOutputData()
 		self.getAuxLinkData()
-
-		// Memory names polled once at init, not every interval (240 RQH commands is too heavy)
-		// self.getMemoryNames()
+		self.getNextMemoryName()
 		self.getLastMemoryLoaded()
 	},
 
@@ -247,17 +245,21 @@ module.exports = {
 		}
 	},*/
 
-	getMemoryNames: function () {
+	// Requests one memory slot's 8 name characters per poll cycle (8 RQH commands)
+	// instead of all 240 at once. Cycles through memories 0–29 on successive calls.
+	getNextMemoryName: function () {
 		let self = this
 
-		for (let i = 0; i < 30; i++) {
-			let hexMemory = i.toString(16).padStart(2, '0').toUpperCase()
-			for (let j = 0; j < 8; j++) {
-				let hex = j.toString(16).padStart(2, '0').toUpperCase()
-				let command = '60' + hexMemory + hex + ',000001;'
-				self.sendRawCommand('RQH:' + command)
-			}
+		if (self.memoryNameIndex === undefined) {
+			self.memoryNameIndex = 0
 		}
+		const i = self.memoryNameIndex
+		const hexMemory = i.toString(16).padStart(2, '0').toUpperCase()
+		for (let j = 0; j < 8; j++) {
+			const hex = j.toString(16).padStart(2, '0').toUpperCase()
+			self.sendRawCommand('RQH:60' + hexMemory + hex + ',000001;')
+		}
+		self.memoryNameIndex = (i + 1) % 30
 	},
 
 	getLastMemoryLoaded: function () {
@@ -286,10 +288,10 @@ module.exports = {
 		} else if (data.trim() == 'Welcome to V-160HD.') {
 			self.updateStatus(InstanceStatus.Ok)
 			self.log('info', 'Authenticated.')
+			self.memoryNameIndex = 0
 			self.sendRawCommand('VER') //request version info
 			self.startInterval() //request some states
 			self.subscribeToTally() //request tally changes
-			self.getMemoryNames() //fetch once at connect, not every poll
 		} else if (data.trim() == 'ERR:0;') {
 			//an error with something that it received
 		} else {

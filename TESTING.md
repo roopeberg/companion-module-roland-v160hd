@@ -64,11 +64,11 @@ Module polls `002100` (PGM) and `002101` (PVW) at init; feedback is updated imme
 Verify preset buttons change AUX output source.
 Check orange tally feedback (bus_tally) on active source only.
 
-## ❌ #9 — AUX tally: device hardware panel changes not reflected
+## ⚠️ #9 — AUX tally: device hardware panel changes
 
-When AUX source is changed from the device's own control panel (not via Companion),
-the module does not receive a push update. Tally only updates when Companion sends a command.
-Fix: implement polling for AUX state. Not yet implemented.
+AUX 1–3 sources (and PGM/PVW) are polled every interval via `getAuxData()`.
+Hardware panel changes are reflected on the next poll cycle. There is no
+push notification from the device for AUX source changes.
 
 ## ⚠️ #14 — Per-bus tally isolation (PGM vs AUX)
 
@@ -113,8 +113,11 @@ TCP chunk instead of being discarded.
 
 ## ⚠️ #16 — Memory names displayed correctly
 
+Memory names are fetched one slot (8 RQH commands) per poll cycle, cycling
+through all 30 slots. At 1 s polling, all 30 names populate within ~30 s.
+
 1. Assign names to memories 1–5 on the device
-2. Connect module — names should appear in Companion variables `memoryname_1` … `memoryname_5`
+2. Connect module and wait ~30 s — names should appear in variables `memoryname_1` … `memoryname_5`
 3. Verify the names show actual text (not hex digits like `41 42 43`)
 4. Verify names with fewer than 8 characters have no trailing spaces in the variable
 

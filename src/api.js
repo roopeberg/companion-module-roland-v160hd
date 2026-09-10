@@ -14,6 +14,8 @@ module.exports = {
 			delete self.socket
 		}
 
+		self.tcpBuffer = ''
+
 		if (self.config.port === undefined) {
 			self.config.port = 8023
 		}
@@ -37,11 +39,25 @@ module.exports = {
 				self.updateStatus(InstanceStatus.Ok)
 			})
 
-			self.socket.on('data', function (buffer) {
-				let indata = buffer.toString('utf8')
+			self.tcpBuffer = ''
 
-				//update feedbacks and variables
-				self.updateData(indata)
+			self.socket.on('data', function (buffer) {
+				self.tcpBuffer += buffer.toString('utf8')
+
+				let newline
+				while ((newline = self.tcpBuffer.indexOf('\n')) !== -1) {
+					const line = self.tcpBuffer.slice(0, newline + 1)
+					self.tcpBuffer = self.tcpBuffer.slice(newline + 1)
+					self.updateData(line)
+				}
+
+				// Roland protocol uses ';' as message terminator for DTH/RQH responses.
+				// Flush any complete semicolon-terminated chunk not yet ended by newline.
+				if (self.tcpBuffer.includes(';')) {
+					const chunk = self.tcpBuffer
+					self.tcpBuffer = ''
+					self.updateData(chunk)
+				}
 			})
 		}
 	},
@@ -261,7 +277,7 @@ module.exports = {
 		} else {
 			//do stuff with the data
 			try {
-				if (data.indexOf(';')) {
+				if (data.indexOf(';') !== -1) {
 					let dataGroups = data.trim().split(';')
 
 					for (let j = 0; j < dataGroups.length; j++) {

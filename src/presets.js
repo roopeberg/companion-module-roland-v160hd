@@ -8,6 +8,12 @@ module.exports = {
 		const RED = combineRgb(204, 0, 0)
 		const GREEN = combineRgb(0, 180, 0)
 		const ORANGE = combineRgb(210, 120, 0)
+		const AMBER_DIM = combineRgb(60, 32, 0)
+		const AMBER = combineRgb(210, 120, 0)
+		const CYAN_DIM = combineRgb(0, 40, 48)
+		const CYAN_AUX = combineRgb(0, 160, 200)
+		const VIOLET_DIM = combineRgb(48, 0, 64)
+		const VIOLET = combineRgb(160, 0, 192)
 		const DARK = combineRgb(30, 30, 30)
 		const CYAN = combineRgb(0, 160, 200)
 		const PURPLE = combineRgb(120, 0, 180)
@@ -74,9 +80,9 @@ module.exports = {
 		}))
 
 		const AUX_DESTS = [
-			{ label: 'AUX 1', aux_address: '000011', bus: 'aux1', color: ORANGE },
-			{ label: 'AUX 2', aux_address: '00002E', bus: 'aux2', color: ORANGE },
-			{ label: 'AUX 3', aux_address: '00002F', bus: 'aux3', color: ORANGE },
+			{ label: 'AUX 1', aux_address: '000011', bus: 'aux1', dimColor: AMBER_DIM, activeColor: AMBER },
+			{ label: 'AUX 2', aux_address: '00002E', bus: 'aux2', dimColor: CYAN_DIM, activeColor: CYAN_AUX },
+			{ label: 'AUX 3', aux_address: '00002F', bus: 'aux3', dimColor: VIOLET_DIM, activeColor: VIOLET },
 		]
 		const pgmpvwDests = [
 			{ label: 'PGM', actionId: 'select_pgm', bus: 'pgm', activeColor: RED },
@@ -144,7 +150,7 @@ module.exports = {
 					presets[id] = {
 						name: `${aux.label}: ${src.label}`,
 						type: 'layered',
-						elements: layeredBtn(src.label, DARK),
+						elements: layeredBtn(src.label, aux.dimColor),
 						steps: [
 							{ down: [{ actionId: 'aux_assign', options: { aux: aux.aux_address, assign: src.pgmpvw_id } }], up: [] },
 						],
@@ -152,7 +158,7 @@ module.exports = {
 							{
 								feedbackId: 'bus_tally',
 								options: { bus: aux.bus, source: src.pgmpvw_id },
-								styleOverrides: bgOverride(aux.color),
+								styleOverrides: bgOverride(aux.activeColor),
 							},
 						],
 					}

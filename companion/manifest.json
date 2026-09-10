@@ -4,7 +4,7 @@
 	"id": "roland-v160hd",
 	"name": "roland-v160hd",
 	"shortname": "v160hd",
-	"description": "",
+	"description": "Control a Roland V-160HD video switcher over TCP. Supports PGM/PVW/AUX source selection, per-bus tally feedback, PiP & DSK parameter capture/apply, snapshots, memory recall, freeze, PTZ camera control, and more.",
 	"version": "0.0.0",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-roland-v160hd.git",

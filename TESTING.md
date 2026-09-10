@@ -1,6 +1,6 @@
 # Testing Checklist
 
-Tests to run with live device connected.
+Tests to run with live device connected unless otherwise noted.
 
 Legend: ✅ Verified OK | ⚠️ Unverified | ❌ Known issue
 
@@ -54,15 +54,18 @@ GAIN (07), MIX LEVEL (09), MODE (02), PGM SW (00), PVW SW (01).
 
 ## ⚠️ #7 — PGM / PVW source selection presets
 
+Requires polling to be enabled.
+
 Verify preset buttons change correct source on PGM and PVW buses.
 Check tally feedback (bus_tally): red (PGM) / green (PVW) on active source only.
 PGM tally must NOT light up when source is on AUX only.
-Module polls `002100` (PGM) and `002101` (PVW) at init; feedback is updated immediately on Companion command and on device push.
+PGM (`002100`) and PVW (`002101`) are polled every interval via `getAuxData()`.
+Feedback is also updated immediately when Companion sends a select command.
 
 ## ⚠️ #8 — AUX 1–3 source selection presets
 
 Verify preset buttons change AUX output source.
-Check orange tally feedback (bus_tally) on active source only.
+Check tally feedback on active source only (AUX 1 amber, AUX 2 cyan, AUX 3 violet).
 
 ## ⚠️ #9 — AUX tally: device hardware panel changes
 
@@ -70,14 +73,14 @@ AUX 1–3 sources (and PGM/PVW) are polled every interval via `getAuxData()`.
 Hardware panel changes are reflected on the next poll cycle. There is no
 push notification from the device for AUX source changes.
 
-## ⚠️ #14 — Per-bus tally isolation (PGM vs AUX)
+## ⚠️ #10 — Per-bus tally isolation (PGM vs AUX)
 
 Ensure that `bus_tally` feedback for PGM bus does NOT activate when the same source is
 active only on AUX1/AUX2/AUX3. Each bus (pgm/pvw/aux1/aux2/aux3) is tracked independently
 in `DATA.pgm_source`, `DATA.pvw_source`, `DATA.aux1source` etc.
 Variables `pgm_source` and `pvw_source` should reflect the current source label.
 
-## ⚠️ #10 — PiP source / type / shape / border presets
+## ⚠️ #11 — PiP source / type / shape / border presets
 
 Test preset buttons in Companion for:
 
@@ -86,16 +89,16 @@ Test preset buttons in Companion for:
 - PiP shape change (Rect / Circle / Diamond)
 - PiP border color change (10 colors)
 
-## ⚠️ #11 — DSK source / type presets
+## ⚠️ #12 — DSK source / type presets
 
 Test DSK Key Source, Fill Source, and Type preset buttons.
 
-## ⚠️ #12 — pnpkey_fade addresses (unverified)
+## ⚠️ #13 — pnpkey_fade addresses (unverified)
 
 Addresses `020305`–`020308` used for PiP fade enable/disable.
 Not confirmed against documentation.
 
-## ⚠️ #13 — aux_mute addresses (unverified)
+## ⚠️ #14 — aux_mute addresses (unverified)
 
 Addresses `012203`, `012503`, `012603` used for AUX mute.
 Not confirmed against documentation.
@@ -109,17 +112,22 @@ Expected: auth succeeds, tally and variable values are always correct.
 
 Fix applied: buffer is now flushed only up to the last `;` — any trailing
 partial message (e.g. `DTH:001B` without closing `;`) is kept for the next
-TCP chunk instead of being discarded.
+TCP chunk instead of being discarded. Auth prompts (`Enter password:`,
+`Welcome to V-160HD.`) are matched by substring regardless of chunk boundaries.
 
 ## ⚠️ #16 — Memory names displayed correctly
 
+Requires polling to be enabled.
+
 Memory names are fetched one slot (8 RQH commands) per poll cycle, cycling
 through all 30 slots. At 1 s polling, all 30 names populate within ~30 s.
+Memory names are not fetched at all when polling is disabled.
 
-1. Assign names to memories 1–5 on the device
-2. Connect module and wait ~30 s — names should appear in variables `memoryname_1` … `memoryname_5`
-3. Verify the names show actual text (not hex digits like `41 42 43`)
-4. Verify names with fewer than 8 characters have no trailing spaces in the variable
+1. Enable polling (≥ 250 ms rate)
+2. Assign names to memories 1–5 on the device
+3. Connect module and wait ~30 s — names should appear in variables `memoryname_1` … `memoryname_5`
+4. Verify the names show actual text (not hex digits like `41 42 43`)
+5. Verify names with fewer than 8 characters have no trailing spaces in the variable
 
 ## ⚠️ #17 — Polling timer does not duplicate on config save
 
@@ -127,6 +135,21 @@ through all 30 slots. At 1 s polling, all 30 names populate within ~30 s.
 2. Open Companion connection settings and save without changes
 3. Monitor device traffic — poll rate should remain ~1/s, not double or triple
 
-## ✅ #18 — Password not logged
+## ⚠️ #18 — Polling rate clamped to minimum 250 ms
+
+1. Set polling rate to `0`, empty, or a non-numeric value
+2. Save settings — Companion log should show a warning and use 250 ms
+3. Monitor device traffic — poll rate should be 250 ms, not 0/1 ms
+
+## ✅ #19 — Password not logged
 
 Verified: `self.log('info', 'Sending passcode')` no longer includes the password value.
+
+---
+
+## Notes
+
+- **Unit tests**: There are no automated tests for the TCP parser or snapshot round-trips.
+  The CI build verifies that the module builds and starts, not all TCP fragmentation cases.
+  Edge-case testing (split auth prompts, interleaved semicolons) must be done manually
+  or via a protocol simulator.

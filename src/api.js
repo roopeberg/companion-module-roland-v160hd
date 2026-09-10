@@ -159,11 +159,13 @@ module.exports = {
 		}
 
 		if (self.config.polling) {
-			if (self.config.pollingrate === undefined) {
-				self.config.pollingrate = 1000
+			const MIN_RATE = 250
+			const rate = Math.max(MIN_RATE, parseInt(self.config.pollingrate) || 1000)
+			if (rate !== parseInt(self.config.pollingrate)) {
+				self.log('warn', `Polling rate clamped to ${rate} ms (was '${self.config.pollingrate}')`)
 			}
-			self.log('info', `Starting Update Interval: Fetching new data from Device every ${self.config.pollingrate}ms.`)
-			self.INTERVAL = setInterval(self.getData.bind(this), parseInt(self.config.pollingrate))
+			self.log('info', `Starting Update Interval: Fetching new data from Device every ${rate}ms.`)
+			self.INTERVAL = setInterval(self.getData.bind(this), rate)
 		} else {
 			self.log('info', 'Polling is disabled. Module will not request new data at a regular rate.')
 		}

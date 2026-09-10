@@ -72,7 +72,7 @@ module.exports = {
 					type: 'dropdown',
 					label: 'Aux',
 					id: 'aux',
-					default: '11',
+					default: 'aux1',
 					choices: [
 						{ id: 'aux1', label: 'Aux 1' },
 						{ id: 'aux2', label: 'Aux 2' },
@@ -126,7 +126,7 @@ module.exports = {
 					type: 'dropdown',
 					label: 'Aux',
 					id: 'aux',
-					default: '11',
+					default: 'aux1',
 					choices: [
 						{ id: 'aux1', label: 'Aux 1' },
 						{ id: 'aux2', label: 'Aux 2' },
@@ -294,7 +294,7 @@ module.exports = {
 					type: 'dropdown',
 					label: 'Aux',
 					id: 'aux',
-					default: '11',
+					default: 'aux1',
 					choices: [
 						{ id: 'aux1', label: 'Aux 1' },
 						{ id: 'aux2', label: 'Aux 2' },
@@ -423,7 +423,7 @@ module.exports = {
 					type: 'dropdown',
 					label: 'PnP/Key',
 					id: 'pinp',
-					default: '1B',
+					default: 'pnpkey1',
 					choices: [
 						{ id: 'pnpkey1', label: 'PnP/Key 1' },
 						{ id: 'pnpkey2', label: 'PnP/Key 2' },

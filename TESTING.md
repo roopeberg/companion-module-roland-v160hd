@@ -99,3 +99,27 @@ Not confirmed against documentation.
 
 Addresses `012203`, `012503`, `012603` used for AUX mute.
 Not confirmed against documentation.
+
+## ⚠️ #15 — TCP receive buffer (split/merged packets)
+
+Verify that authentication and data parsing work correctly when the device
+sends responses in multiple TCP segments or merges several responses into one
+packet. Test by connecting over a high-latency or congested network.
+Expected: auth succeeds, tally and variable values are always correct.
+
+## ⚠️ #16 — Memory names displayed correctly
+
+1. Assign names to memories 1–5 on the device
+2. Connect module — names should appear in Companion variables `memoryname_1` … `memoryname_5`
+3. Verify the names show actual text (not hex digits like `41 42 43`)
+4. Verify names with fewer than 8 characters have no trailing spaces in the variable
+
+## ⚠️ #17 — Polling timer does not duplicate on config save
+
+1. Enable polling (1000 ms)
+2. Open Companion connection settings and save without changes
+3. Monitor device traffic — poll rate should remain ~1/s, not double or triple
+
+## ✅ #18 — Password not logged
+
+Verified: `self.log('info', 'Sending passcode')` no longer includes the password value.

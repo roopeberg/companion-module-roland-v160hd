@@ -7,11 +7,8 @@ module.exports = {
 		const WHITE = combineRgb(255, 255, 255)
 		const RED = combineRgb(204, 0, 0)
 		const GREEN = combineRgb(0, 180, 0)
-		const AMBER_DIM = combineRgb(60, 32, 0)
 		const AMBER = combineRgb(210, 120, 0)
-		const CYAN_DIM = combineRgb(0, 40, 48)
 		const CYAN_AUX = combineRgb(0, 160, 200)
-		const VIOLET_DIM = combineRgb(48, 0, 64)
 		const VIOLET = combineRgb(160, 0, 192)
 		const DARK = combineRgb(30, 30, 30)
 		const CYAN = combineRgb(0, 160, 200)
@@ -53,15 +50,33 @@ module.exports = {
 		}
 
 		function bgOverride(color) {
-			return [{ elementId: 'bg', elementProperty: 'color', override: { isExpression: false, value: color } }]
+			return [
+				{
+					elementId: 'bg',
+					elementProperty: 'color',
+					override: { isExpression: false, value: color },
+				},
+			]
 		}
 
 		function borderOverride(color) {
-			return [{ elementId: 'border', elementProperty: 'color', override: { isExpression: false, value: color } }]
+			return [
+				{
+					elementId: 'border',
+					elementProperty: 'color',
+					override: { isExpression: false, value: color },
+				},
+			]
 		}
 
 		function dotOverride(id, color) {
-			return [{ elementId: id, elementProperty: 'color', override: { isExpression: false, value: color } }]
+			return [
+				{
+					elementId: id,
+					elementProperty: 'color',
+					override: { isExpression: false, value: color },
+				},
+			]
 		}
 
 		// Source button with bus label (top-left) + PGM/PVW dots (top-right)
@@ -70,15 +85,97 @@ module.exports = {
 		// feedbacks selectively light them up per button type.
 		function sourceBtn(sourceLabel, busLabel, busLabelColor) {
 			return [
-				{ type: 'box', id: 'border', x: 0, y: 0, width: 100, height: 100, color: DARK },
-				{ type: 'box', id: 'bg', x: 3, y: 3, width: 94, height: 94, color: DARK },
-				{ type: 'text', id: 'bus_label', x: 4, y: 4, width: 68, height: 14, text: busLabel, fontsize: 14, fontsizeAllowShrink: true, color: busLabelColor, halign: 'left', valign: 'top' },
-				{ type: 'box', id: 'pgm_dot', x: 74, y: 5, width: 10, height: 11, color: DARK },
-				{ type: 'box', id: 'pvw_dot', x: 86, y: 5, width: 10, height: 11, color: DARK },
-				{ type: 'text', id: 'label', x: 3, y: 20, width: 94, height: 65, text: sourceLabel, fontsize: FONT_SIZE, fontsizeAllowShrink: true, color: WHITE, halign: 'center', valign: 'center' },
-				{ type: 'box', id: 'dot_aux1', x: 3, y: 87, width: 29, height: 10, color: DARK },
-				{ type: 'box', id: 'dot_aux2', x: 35, y: 87, width: 29, height: 10, color: DARK },
-				{ type: 'box', id: 'dot_aux3', x: 67, y: 87, width: 29, height: 10, color: DARK },
+				{
+					type: 'box',
+					id: 'border',
+					x: 0,
+					y: 0,
+					width: 100,
+					height: 100,
+					color: DARK,
+				},
+				{
+					type: 'box',
+					id: 'bg',
+					x: 3,
+					y: 3,
+					width: 94,
+					height: 94,
+					color: DARK,
+				},
+				{
+					type: 'text',
+					id: 'bus_label',
+					x: 4,
+					y: 4,
+					width: 68,
+					height: 14,
+					text: busLabel,
+					fontsize: 14,
+					fontsizeAllowShrink: true,
+					color: busLabelColor,
+					halign: 'left',
+					valign: 'top',
+				},
+				{
+					type: 'box',
+					id: 'pgm_dot',
+					x: 74,
+					y: 5,
+					width: 10,
+					height: 11,
+					color: DARK,
+				},
+				{
+					type: 'box',
+					id: 'pvw_dot',
+					x: 86,
+					y: 5,
+					width: 10,
+					height: 11,
+					color: DARK,
+				},
+				{
+					type: 'text',
+					id: 'label',
+					x: 3,
+					y: 20,
+					width: 94,
+					height: 65,
+					text: sourceLabel,
+					fontsize: FONT_SIZE,
+					fontsizeAllowShrink: true,
+					color: WHITE,
+					halign: 'center',
+					valign: 'center',
+				},
+				{
+					type: 'box',
+					id: 'dot_aux1',
+					x: 3,
+					y: 87,
+					width: 29,
+					height: 10,
+					color: DARK,
+				},
+				{
+					type: 'box',
+					id: 'dot_aux2',
+					x: 35,
+					y: 87,
+					width: 29,
+					height: 10,
+					color: DARK,
+				},
+				{
+					type: 'box',
+					id: 'dot_aux3',
+					x: 67,
+					y: 87,
+					width: 29,
+					height: 10,
+					color: DARK,
+				},
 			]
 		}
 
@@ -111,13 +208,43 @@ module.exports = {
 		const AUX3_LABEL_COLOR = combineRgb(70, 0, 100)
 
 		const AUX_DESTS = [
-			{ label: 'AUX 1', aux_address: '000011', bus: 'aux1', labelColor: AUX1_LABEL_COLOR, activeColor: AMBER },
-			{ label: 'AUX 2', aux_address: '00002E', bus: 'aux2', labelColor: AUX2_LABEL_COLOR, activeColor: CYAN_AUX },
-			{ label: 'AUX 3', aux_address: '00002F', bus: 'aux3', labelColor: AUX3_LABEL_COLOR, activeColor: VIOLET },
+			{
+				label: 'AUX 1',
+				aux_address: '000011',
+				bus: 'aux1',
+				labelColor: AUX1_LABEL_COLOR,
+				activeColor: AMBER,
+			},
+			{
+				label: 'AUX 2',
+				aux_address: '00002E',
+				bus: 'aux2',
+				labelColor: AUX2_LABEL_COLOR,
+				activeColor: CYAN_AUX,
+			},
+			{
+				label: 'AUX 3',
+				aux_address: '00002F',
+				bus: 'aux3',
+				labelColor: AUX3_LABEL_COLOR,
+				activeColor: VIOLET,
+			},
 		]
 		const pgmpvwDests = [
-			{ label: 'PGM', actionId: 'select_pgm', bus: 'pgm', labelColor: PGM_LABEL_COLOR, activeColor: RED },
-			{ label: 'PVW', actionId: 'select_pvw', bus: 'pvw', labelColor: PVW_LABEL_COLOR, activeColor: GREEN },
+			{
+				label: 'PGM',
+				actionId: 'select_pgm',
+				bus: 'pgm',
+				labelColor: PGM_LABEL_COLOR,
+				activeColor: RED,
+			},
+			{
+				label: 'PVW',
+				actionId: 'select_pvw',
+				bus: 'pvw',
+				labelColor: PVW_LABEL_COLOR,
+				activeColor: GREEN,
+			},
 		]
 
 		// Secondary tally feedbacks for all source buttons (PGM/PVW dots + AUX1-3 squares).
@@ -144,14 +271,98 @@ module.exports = {
 		// otherwise so the button stays clean. Squares layer over the PGM red background.
 		function pgmMultiAuxBtn(sourceLabel) {
 			return [
-				{ type: 'box', id: 'bg', x: 0, y: 0, width: 100, height: 100, color: DARK },
-				{ type: 'text', id: 'label', x: 3, y: 3, width: 94, height: 61, text: sourceLabel, fontsize: FONT_SIZE, fontsizeAllowShrink: true, color: WHITE, halign: 'center', valign: 'center' },
-				{ type: 'box', id: 'dot_aux1', x: 0, y: 67, width: 33, height: 33, color: DARK },
-				{ type: 'box', id: 'dot_aux2', x: 33, y: 67, width: 34, height: 33, color: DARK },
-				{ type: 'box', id: 'dot_aux3', x: 67, y: 67, width: 33, height: 33, color: DARK },
-				{ type: 'text', id: 'num1', x: 0, y: 67, width: 33, height: 33, text: '1', fontsize: 22, fontsizeAllowShrink: false, color: DARK, halign: 'center', valign: 'center' },
-				{ type: 'text', id: 'num2', x: 33, y: 67, width: 34, height: 33, text: '2', fontsize: 22, fontsizeAllowShrink: false, color: DARK, halign: 'center', valign: 'center' },
-				{ type: 'text', id: 'num3', x: 67, y: 67, width: 33, height: 33, text: '3', fontsize: 22, fontsizeAllowShrink: false, color: DARK, halign: 'center', valign: 'center' },
+				{
+					type: 'box',
+					id: 'bg',
+					x: 0,
+					y: 0,
+					width: 100,
+					height: 100,
+					color: DARK,
+				},
+				{
+					type: 'text',
+					id: 'label',
+					x: 3,
+					y: 3,
+					width: 94,
+					height: 61,
+					text: sourceLabel,
+					fontsize: FONT_SIZE,
+					fontsizeAllowShrink: true,
+					color: WHITE,
+					halign: 'center',
+					valign: 'center',
+				},
+				{
+					type: 'box',
+					id: 'dot_aux1',
+					x: 0,
+					y: 67,
+					width: 33,
+					height: 33,
+					color: DARK,
+				},
+				{
+					type: 'box',
+					id: 'dot_aux2',
+					x: 33,
+					y: 67,
+					width: 34,
+					height: 33,
+					color: DARK,
+				},
+				{
+					type: 'box',
+					id: 'dot_aux3',
+					x: 67,
+					y: 67,
+					width: 33,
+					height: 33,
+					color: DARK,
+				},
+				{
+					type: 'text',
+					id: 'num1',
+					x: 0,
+					y: 67,
+					width: 33,
+					height: 33,
+					text: '1',
+					fontsize: 22,
+					fontsizeAllowShrink: false,
+					color: DARK,
+					halign: 'center',
+					valign: 'center',
+				},
+				{
+					type: 'text',
+					id: 'num2',
+					x: 33,
+					y: 67,
+					width: 34,
+					height: 33,
+					text: '2',
+					fontsize: 22,
+					fontsizeAllowShrink: false,
+					color: DARK,
+					halign: 'center',
+					valign: 'center',
+				},
+				{
+					type: 'text',
+					id: 'num3',
+					x: 67,
+					y: 67,
+					width: 33,
+					height: 33,
+					text: '3',
+					fontsize: 22,
+					fontsizeAllowShrink: false,
+					color: DARK,
+					halign: 'center',
+					valign: 'center',
+				},
 			]
 		}
 
@@ -190,9 +401,23 @@ module.exports = {
 						name: `${dest.label}: ${src.label}`,
 						type: 'layered',
 						elements: sourceBtn(src.label, dest.label, dest.labelColor),
-						steps: [{ down: [{ actionId: dest.actionId, options: { input: src.pgmpvw_id } }], up: [] }],
+						steps: [
+							{
+								down: [
+									{
+										actionId: dest.actionId,
+										options: { input: src.pgmpvw_id },
+									},
+								],
+								up: [],
+							},
+						],
 						feedbacks: [
-							{ feedbackId: 'bus_tally', options: { bus: dest.bus, source: src.pgmpvw_id }, styleOverrides: borderOverride(dest.activeColor) },
+							{
+								feedbackId: 'bus_tally',
+								options: { bus: dest.bus, source: src.pgmpvw_id },
+								styleOverrides: borderOverride(dest.activeColor),
+							},
 							...secondaryFeedbacks(src.pgmpvw_id, dest.bus),
 						],
 					}
@@ -214,10 +439,22 @@ module.exports = {
 						type: 'layered',
 						elements: sourceBtn(src.label, aux.label, aux.labelColor),
 						steps: [
-							{ down: [{ actionId: 'aux_assign', options: { aux: aux.aux_address, assign: src.pgmpvw_id } }], up: [] },
+							{
+								down: [
+									{
+										actionId: 'aux_assign',
+										options: { aux: aux.aux_address, assign: src.pgmpvw_id },
+									},
+								],
+								up: [],
+							},
 						],
 						feedbacks: [
-							{ feedbackId: 'bus_tally', options: { bus: aux.bus, source: src.pgmpvw_id }, styleOverrides: borderOverride(aux.activeColor) },
+							{
+								feedbackId: 'bus_tally',
+								options: { bus: aux.bus, source: src.pgmpvw_id },
+								styleOverrides: borderOverride(aux.activeColor),
+							},
 							...secondaryFeedbacks(src.pgmpvw_id, aux.bus),
 						],
 					}
@@ -238,7 +475,12 @@ module.exports = {
 					name: `PGM+AUX: ${src.label}`,
 					type: 'layered',
 					elements: pgmMultiAuxBtn(src.label),
-					steps: [{ down: [{ actionId: 'select_pgm', options: { input: src.pgmpvw_id } }], up: [] }],
+					steps: [
+						{
+							down: [{ actionId: 'select_pgm', options: { input: src.pgmpvw_id } }],
+							up: [],
+						},
+					],
 					feedbacks: [
 						{
 							feedbackId: 'bus_tally',
@@ -250,7 +492,11 @@ module.exports = {
 							options: { bus: 'aux1', source: src.pgmpvw_id },
 							styleOverrides: [
 								...dotOverride('dot_aux1', AMBER),
-								{ elementId: 'num1', elementProperty: 'color', override: { isExpression: false, value: WHITE } },
+								{
+									elementId: 'num1',
+									elementProperty: 'color',
+									override: { isExpression: false, value: WHITE },
+								},
 							],
 						},
 						{
@@ -258,7 +504,11 @@ module.exports = {
 							options: { bus: 'aux2', source: src.pgmpvw_id },
 							styleOverrides: [
 								...dotOverride('dot_aux2', CYAN_AUX),
-								{ elementId: 'num2', elementProperty: 'color', override: { isExpression: false, value: WHITE } },
+								{
+									elementId: 'num2',
+									elementProperty: 'color',
+									override: { isExpression: false, value: WHITE },
+								},
 							],
 						},
 						{
@@ -266,7 +516,11 @@ module.exports = {
 							options: { bus: 'aux3', source: src.pgmpvw_id },
 							styleOverrides: [
 								...dotOverride('dot_aux3', VIOLET),
-								{ elementId: 'num3', elementProperty: 'color', override: { isExpression: false, value: WHITE } },
+								{
+									elementId: 'num3',
+									elementProperty: 'color',
+									override: { isExpression: false, value: WHITE },
+								},
 							],
 						},
 					],
@@ -411,9 +665,18 @@ module.exports = {
 
 		// DSK source list: integer IDs matching CHOICES_INPUTSASSIGN (0-31)
 		const dskSources = [
-			...Array.from({ length: 8 }, (_, i) => ({ intId: i, label: `H${i + 1}` })),
-			...Array.from({ length: 8 }, (_, i) => ({ intId: 8 + i, label: `S${i + 1}` })),
-			...Array.from({ length: 16 }, (_, i) => ({ intId: 16 + i, label: `St${i + 1}` })),
+			...Array.from({ length: 8 }, (_, i) => ({
+				intId: i,
+				label: `H${i + 1}`,
+			})),
+			...Array.from({ length: 8 }, (_, i) => ({
+				intId: 8 + i,
+				label: `S${i + 1}`,
+			})),
+			...Array.from({ length: 16 }, (_, i) => ({
+				intId: 16 + i,
+				label: `St${i + 1}`,
+			})),
 		]
 
 		const dskIntIds = [
@@ -490,7 +753,12 @@ module.exports = {
 				name: `Save ${slot.label}`,
 				type: 'layered',
 				elements: layeredBtn(`SAVE\n${slot.label}`, SAVE_DIM),
-				steps: [{ down: [{ actionId: 'save_snapshot', options: { name: slot.name } }], up: [] }],
+				steps: [
+					{
+						down: [{ actionId: 'save_snapshot', options: { name: slot.name } }],
+						up: [],
+					},
+				],
 				feedbacks: [
 					{
 						feedbackId: 'snapshot_exists',
@@ -504,7 +772,12 @@ module.exports = {
 				name: `Clear ${slot.label}`,
 				type: 'layered',
 				elements: layeredBtn(`CLEAR\n${slot.label}`, SAVE_DIM),
-				steps: [{ down: [{ actionId: 'delete_snapshot', options: { name: slot.name } }], up: [] }],
+				steps: [
+					{
+						down: [{ actionId: 'delete_snapshot', options: { name: slot.name } }],
+						up: [],
+					},
+				],
 				feedbacks: [
 					{
 						feedbackId: 'snapshot_exists',
@@ -566,15 +839,11 @@ module.exports = {
 			elements: layeredBtn('FREEZE\nOFF', FREEZE_DIM),
 			steps: [
 				{
-					down: [
-						{ actionId: 'freezeSwitchOn', options: {} },
-					],
+					down: [{ actionId: 'freezeSwitchOn', options: {} }],
 					up: [],
 				},
 				{
-					down: [
-						{ actionId: 'freezeSwitchOff', options: {} },
-					],
+					down: [{ actionId: 'freezeSwitchOff', options: {} }],
 					up: [],
 				},
 			],
@@ -605,8 +874,16 @@ module.exports = {
 				{
 					feedbackId: 'freeze_type_select',
 					styleOverrides: [
-						{ elementId: 'bg', elementProperty: 'color', override: { isExpression: false, value: FREEZE_TYPE_COLOR } },
-						{ elementId: 'label', elementProperty: 'text', override: { isExpression: false, value: 'FREEZE\nSELECT' } },
+						{
+							elementId: 'bg',
+							elementProperty: 'color',
+							override: { isExpression: false, value: FREEZE_TYPE_COLOR },
+						},
+						{
+							elementId: 'label',
+							elementProperty: 'text',
+							override: { isExpression: false, value: 'FREEZE\nSELECT' },
+						},
 					],
 				},
 			],
@@ -649,7 +926,7 @@ module.exports = {
 				inputs: Array.from({ length: 8 }, (_, i) => ({
 					label: `SDI ${i + 1}`,
 					pvw_id: (8 + i).toString(16).padStart(2, '0').toUpperCase(),
-					freeze_addr: (i + 0x0A).toString(16).padStart(2, '0').toUpperCase(),
+					freeze_addr: (i + 0x0a).toString(16).padStart(2, '0').toUpperCase(),
 				})),
 			},
 		]
@@ -664,19 +941,69 @@ module.exports = {
 					type: 'layered',
 					elements: [
 						// border: freeze-selected → cyan
-						{ type: 'box', id: 'border', x: 0, y: 0, width: 100, height: 100, color: FREEZE_DIM },
+						{
+							type: 'box',
+							id: 'border',
+							x: 0,
+							y: 0,
+							width: 100,
+							height: 100,
+							color: FREEZE_DIM,
+						},
 						// bg: always dark inner
-						{ type: 'box', id: 'bg', x: 3, y: 3, width: 94, height: 83, color: FREEZE_DIM },
+						{
+							type: 'box',
+							id: 'bg',
+							x: 3,
+							y: 3,
+							width: 94,
+							height: 83,
+							color: FREEZE_DIM,
+						},
 						// pvw_dot: top-right, lights green when PVW active
-						{ type: 'box', id: 'pvw_dot', x: 83, y: 5, width: 12, height: 12, color: FREEZE_DIM },
+						{
+							type: 'box',
+							id: 'pvw_dot',
+							x: 83,
+							y: 5,
+							width: 12,
+							height: 12,
+							color: FREEZE_DIM,
+						},
 						// input name (center of inner area)
-						{ type: 'text', id: 'label', x: 3, y: 5, width: 78, height: 79, text: inp.label, fontsize: FONT_SIZE, fontsizeAllowShrink: true, color: WHITE, halign: 'center', valign: 'center' },
+						{
+							type: 'text',
+							id: 'label',
+							x: 3,
+							y: 5,
+							width: 78,
+							height: 79,
+							text: inp.label,
+							fontsize: FONT_SIZE,
+							fontsizeAllowShrink: true,
+							color: WHITE,
+							halign: 'center',
+							valign: 'center',
+						},
 						// set_mode_bar: bottom strip, lights cyan when SET FREEZE modifier active
-						{ type: 'box', id: 'set_mode_bar', x: 3, y: 88, width: 94, height: 9, color: FREEZE_DIM },
+						{
+							type: 'box',
+							id: 'set_mode_bar',
+							x: 3,
+							y: 88,
+							width: 94,
+							height: 9,
+							color: FREEZE_DIM,
+						},
 					],
 					steps: [
 						{
-							down: [{ actionId: 'pvwOrFreezeToggle', options: { input: inp.pvw_id, freeze_addr: inp.freeze_addr } }],
+							down: [
+								{
+									actionId: 'pvwOrFreezeToggle',
+									options: { input: inp.pvw_id, freeze_addr: inp.freeze_addr },
+								},
+							],
 							up: [],
 						},
 					],
@@ -693,7 +1020,11 @@ module.exports = {
 							options: { input: inp.freeze_addr },
 							styleOverrides: [
 								...borderOverride(FREEZE_CYAN),
-								{ elementId: 'label', elementProperty: 'text', override: { isExpression: false, value: `❄ ${inp.label}` } },
+								{
+									elementId: 'label',
+									elementProperty: 'text',
+									override: { isExpression: false, value: `❄ ${inp.label}` },
+								},
 							],
 						},
 						// SET FREEZE mode active — bottom bar turns cyan
@@ -728,13 +1059,19 @@ module.exports = {
 					{
 						type: 'box',
 						id: 'bg',
-						x: 0, y: 0, width: 100, height: 100,
+						x: 0,
+						y: 0,
+						width: 100,
+						height: 100,
 						color: MEM_DIM,
 					},
 					{
 						type: 'text',
 						id: 'num',
-						x: 0, y: 0, width: 30, height: 30,
+						x: 0,
+						y: 0,
+						width: 30,
+						height: 30,
 						text: String(slot),
 						fontsize: 18,
 						fontsizeAllowShrink: false,
@@ -745,7 +1082,10 @@ module.exports = {
 					{
 						type: 'text',
 						id: 'label',
-						x: 0, y: 30, width: 100, height: 70,
+						x: 0,
+						y: 30,
+						width: 100,
+						height: 70,
 						text: nameVar,
 						fontsize: FONT_SIZE,
 						fontsizeAllowShrink: true,
@@ -755,7 +1095,10 @@ module.exports = {
 					},
 				],
 				steps: [
-					{ down: [{ actionId: 'load_memory_trigger', options: { memory: memId } }], up: [] },
+					{
+						down: [{ actionId: 'load_memory_trigger', options: { memory: memId } }],
+						up: [],
+					},
 				],
 				feedbacks: [
 					{
@@ -775,13 +1118,19 @@ module.exports = {
 					{
 						type: 'box',
 						id: 'bg',
-						x: 0, y: 0, width: 100, height: 100,
+						x: 0,
+						y: 0,
+						width: 100,
+						height: 100,
 						color: MEM_DIM,
 					},
 					{
 						type: 'text',
 						id: 'num',
-						x: 0, y: 0, width: 30, height: 30,
+						x: 0,
+						y: 0,
+						width: 30,
+						height: 30,
 						text: String(slot),
 						fontsize: 18,
 						fontsizeAllowShrink: false,
@@ -792,7 +1141,10 @@ module.exports = {
 					{
 						type: 'text',
 						id: 'label',
-						x: 0, y: 30, width: 100, height: 70,
+						x: 0,
+						y: 30,
+						width: 100,
+						height: 70,
 						text: nameVar,
 						fontsize: FONT_SIZE,
 						fontsizeAllowShrink: true,
@@ -802,7 +1154,10 @@ module.exports = {
 					},
 				],
 				steps: [
-					{ down: [{ actionId: 'save_memory_trigger', options: { memory: memId } }], up: [] },
+					{
+						down: [{ actionId: 'save_memory_trigger', options: { memory: memId } }],
+						up: [],
+					},
 				],
 				feedbacks: [],
 			}
@@ -834,7 +1189,17 @@ module.exports = {
 					name: `${aux.label} ${mute.label}`,
 					type: 'layered',
 					elements: layeredBtn(`${aux.label}\n${mute.label}`, MUTE_DIM),
-					steps: [{ down: [{ actionId: 'aux_mute', options: { aux: aux.address, mute: mute.value } }], up: [] }],
+					steps: [
+						{
+							down: [
+								{
+									actionId: 'aux_mute',
+									options: { aux: aux.address, mute: mute.value },
+								},
+							],
+							up: [],
+						},
+					],
 					feedbacks: [
 						{
 							feedbackId: 'auxMute',
@@ -860,8 +1225,19 @@ module.exports = {
 				name: `Transition: ${t.label}`,
 				type: 'layered',
 				elements: layeredBtn(t.label, TRANS_DIM),
-				steps: [{ down: [{ actionId: 'set_transition_type', options: { type: t.id } }], up: [] }],
-				feedbacks: [{ feedbackId: 'transition_type', options: { type: t.id }, styleOverrides: bgOverride(TRANS_COLOR) }],
+				steps: [
+					{
+						down: [{ actionId: 'set_transition_type', options: { type: t.id } }],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'transition_type',
+						options: { type: t.id },
+						styleOverrides: bgOverride(TRANS_COLOR),
+					},
+				],
 			}
 			transTypeIds.push(id)
 		}
@@ -874,8 +1250,19 @@ module.exports = {
 				name: `Mix Type: ${t.label}`,
 				type: 'layered',
 				elements: layeredBtn(`Mix\n${t.label}`, TRANS_DIM),
-				steps: [{ down: [{ actionId: 'set_mix_type', options: { type: t.id } }], up: [] }],
-				feedbacks: [{ feedbackId: 'mix_type', options: { type: t.id }, styleOverrides: bgOverride(TRANS_COLOR) }],
+				steps: [
+					{
+						down: [{ actionId: 'set_mix_type', options: { type: t.id } }],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'mix_type',
+						options: { type: t.id },
+						styleOverrides: bgOverride(TRANS_COLOR),
+					},
+				],
 			}
 			mixTypeIds.push(id)
 		}
@@ -888,8 +1275,19 @@ module.exports = {
 				name: `Wipe: ${t.label}`,
 				type: 'layered',
 				elements: layeredBtn(`Wipe\n${t.label}`, TRANS_DIM),
-				steps: [{ down: [{ actionId: 'set_wipe_type', options: { type: t.id } }], up: [] }],
-				feedbacks: [{ feedbackId: 'wipe_type', options: { type: t.id }, styleOverrides: bgOverride(TRANS_COLOR) }],
+				steps: [
+					{
+						down: [{ actionId: 'set_wipe_type', options: { type: t.id } }],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'wipe_type',
+						options: { type: t.id },
+						styleOverrides: bgOverride(TRANS_COLOR),
+					},
+				],
 			}
 			wipeTypeIds.push(id)
 		}
@@ -902,8 +1300,19 @@ module.exports = {
 				name: `Wipe Direction: ${d.label}`,
 				type: 'layered',
 				elements: layeredBtn(`Wipe\n${d.label}`, TRANS_DIM),
-				steps: [{ down: [{ actionId: 'set_wipe_direction', options: { direction: d.id } }], up: [] }],
-				feedbacks: [{ feedbackId: 'wipe_direction', options: { direction: d.id }, styleOverrides: bgOverride(TRANS_COLOR) }],
+				steps: [
+					{
+						down: [{ actionId: 'set_wipe_direction', options: { direction: d.id } }],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'wipe_direction',
+						options: { direction: d.id },
+						styleOverrides: bgOverride(TRANS_COLOR),
+					},
+				],
 			}
 			wipeDirIds.push(id)
 		}

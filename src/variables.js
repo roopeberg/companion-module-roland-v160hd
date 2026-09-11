@@ -7,7 +7,9 @@ module.exports = {
 		variables.version = { name: 'Version' }
 
 		for (let i = 0; i < self.TALLYDATA.length; i++) {
-			variables['tally_' + self.TALLYDATA[i].shortlabel] = { name: self.TALLYDATA[i].label + ' Tally' }
+			variables['tally_' + self.TALLYDATA[i].shortlabel] = {
+				name: self.TALLYDATA[i].label + ' Tally',
+			}
 		}
 
 		variables.pnpkey1_pgm = { name: 'PnP/Key 1 on PGM' }
@@ -61,8 +63,12 @@ module.exports = {
 		variables.freeze_type = { name: 'Freeze Type (All/Select)' }
 		variables.freeze_select_mode = { name: 'Freeze Select Mode Active' }
 		for (let i = 1; i <= 8; i++) {
-			variables[`freeze_select_hdmi${i}`] = { name: `Freeze Select HDMI IN ${i}` }
-			variables[`freeze_select_sdi${i}`] = { name: `Freeze Select SDI IN ${i}` }
+			variables[`freeze_select_hdmi${i}`] = {
+				name: `Freeze Select HDMI IN ${i}`,
+			}
+			variables[`freeze_select_sdi${i}`] = {
+				name: `Freeze Select SDI IN ${i}`,
+			}
 		}
 
 		// PiP captured settings (populated by Capture PiP action)
@@ -75,16 +81,32 @@ module.exports = {
 		for (const p of pipIds) {
 			variables[`pip${p.n}_source`] = { name: `PiP ${p.n} Captured Source` }
 			variables[`pip${p.n}_type`] = { name: `PiP ${p.n} Captured Type` }
-			variables[`pip${p.n}_positionH`] = { name: `PiP ${p.n} Captured Position H (%)` }
-			variables[`pip${p.n}_positionV`] = { name: `PiP ${p.n} Captured Position V (%)` }
+			variables[`pip${p.n}_positionH`] = {
+				name: `PiP ${p.n} Captured Position H (%)`,
+			}
+			variables[`pip${p.n}_positionV`] = {
+				name: `PiP ${p.n} Captured Position V (%)`,
+			}
 			variables[`pip${p.n}_size`] = { name: `PiP ${p.n} Captured Size (%)` }
-			variables[`pip${p.n}_croppingH`] = { name: `PiP ${p.n} Captured Cropping H (%)` }
-			variables[`pip${p.n}_croppingV`] = { name: `PiP ${p.n} Captured Cropping V (%)` }
+			variables[`pip${p.n}_croppingH`] = {
+				name: `PiP ${p.n} Captured Cropping H (%)`,
+			}
+			variables[`pip${p.n}_croppingV`] = {
+				name: `PiP ${p.n} Captured Cropping V (%)`,
+			}
 			variables[`pip${p.n}_shape`] = { name: `PiP ${p.n} Captured Shape` }
-			variables[`pip${p.n}_borderColor`] = { name: `PiP ${p.n} Captured Border Color` }
-			variables[`pip${p.n}_borderWidth`] = { name: `PiP ${p.n} Captured Border Width` }
-			variables[`pip${p.n}_viewPosH`] = { name: `PiP ${p.n} Captured View Pos H (%)` }
-			variables[`pip${p.n}_viewPosV`] = { name: `PiP ${p.n} Captured View Pos V (%)` }
+			variables[`pip${p.n}_borderColor`] = {
+				name: `PiP ${p.n} Captured Border Color`,
+			}
+			variables[`pip${p.n}_borderWidth`] = {
+				name: `PiP ${p.n} Captured Border Width`,
+			}
+			variables[`pip${p.n}_viewPosH`] = {
+				name: `PiP ${p.n} Captured View Pos H (%)`,
+			}
+			variables[`pip${p.n}_viewPosV`] = {
+				name: `PiP ${p.n} Captured View Pos V (%)`,
+			}
 			variables[`pip${p.n}_zoom`] = { name: `PiP ${p.n} Captured Zoom (%)` }
 		}
 
@@ -94,8 +116,12 @@ module.exports = {
 			{ n: 2, id: '20' },
 		]
 		for (const d of dskIds) {
-			variables[`dsk${d.n}_keySource`] = { name: `DSK ${d.n} Captured Key Source` }
-			variables[`dsk${d.n}_fillSource`] = { name: `DSK ${d.n} Captured Fill Source` }
+			variables[`dsk${d.n}_keySource`] = {
+				name: `DSK ${d.n} Captured Key Source`,
+			}
+			variables[`dsk${d.n}_fillSource`] = {
+				name: `DSK ${d.n} Captured Fill Source`,
+			}
 			variables[`dsk${d.n}_type`] = { name: `DSK ${d.n} Captured Type` }
 		}
 
@@ -263,7 +289,16 @@ module.exports = {
 			//Transition
 			const TRANS_TYPE_LABELS = ['Mix', 'Wipe']
 			const MIX_TYPE_LABELS = ['Mix', 'Fam', 'Nam']
-			const WIPE_TYPE_LABELS = ['Horizontal', 'Vertical', 'Upper Left', 'Upper Right', 'Lower Left', 'Lower Right', 'H-Center', 'V-Center']
+			const WIPE_TYPE_LABELS = [
+				'Horizontal',
+				'Vertical',
+				'Upper Left',
+				'Upper Right',
+				'Lower Left',
+				'Lower Right',
+				'H-Center',
+				'V-Center',
+			]
 			const WIPE_DIR_LABELS = ['Normal', 'Reverse', 'Round Trip']
 			variableObj.transition_type = TRANS_TYPE_LABELS[self.DATA.transition_type] ?? '-'
 			variableObj.mix_type = MIX_TYPE_LABELS[self.DATA.mix_type] ?? '-'
@@ -277,13 +312,19 @@ module.exports = {
 			// HDMI IN 1-8: addresses 02-09, SDI IN 1-8: addresses 0A-11
 			for (let i = 0; i < 8; i++) {
 				const hdmiAddr = (i + 2).toString(16).padStart(2, '0').toUpperCase()
-				const sdiAddr = (i + 0x0A).toString(16).padStart(2, '0').toUpperCase()
-				variableObj[`freeze_select_hdmi${i + 1}`] = self.DATA[`freeze_select_${hdmiAddr}`] == '01' ? 'Enabled' : 'Disabled'
-				variableObj[`freeze_select_sdi${i + 1}`] = self.DATA[`freeze_select_${sdiAddr}`] == '01' ? 'Enabled' : 'Disabled'
+				const sdiAddr = (i + 0x0a).toString(16).padStart(2, '0').toUpperCase()
+				variableObj[`freeze_select_hdmi${i + 1}`] =
+					self.DATA[`freeze_select_${hdmiAddr}`] == '01' ? 'Enabled' : 'Disabled'
+				variableObj[`freeze_select_sdi${i + 1}`] =
+					self.DATA[`freeze_select_${sdiAddr}`] == '01' ? 'Enabled' : 'Disabled'
 			}
 
 			// PiP captured settings
-			const SHAPE_LABELS = { '00': 'Rectangle', '01': 'Circle', '02': 'Diamond' }
+			const SHAPE_LABELS = {
+				'00': 'Rectangle',
+				'01': 'Circle',
+				'02': 'Diamond',
+			}
 			const BORDER_COLOR_LABELS = {
 				'00': 'White',
 				'01': 'Yellow',

@@ -89,7 +89,10 @@ describe('Priority command queue', () => {
 		await new Promise((r) => setTimeout(r, 50))
 		const stale = sent.filter((s) => s.includes('AAAAAA'))
 		assert.equal(stale.length, 0, 'stale drain sent a cleared command')
-		assert.ok(sent.some((s) => s.includes('BBBBBB')), 'new command was not sent')
+		assert.ok(
+			sent.some((s) => s.includes('BBBBBB')),
+			'new command was not sent',
+		)
 	})
 
 	test('commands are terminated with semicolon and newline', async () => {

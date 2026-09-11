@@ -457,7 +457,9 @@ module.exports = {
 								: opt.bus === 'aux2'
 									? 'aux2source'
 									: 'aux3source'
-				return self.DATA[busKey] == opt.source
+				// Resolve INPUT-slot sources (20–29) to physical IDs before comparing,
+				// so XPT buttons light up even after the slot→physical lookup has run.
+				return self.DATA[busKey] == self.resolveInputSource(opt.source)
 			},
 		}
 

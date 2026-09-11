@@ -521,10 +521,7 @@ module.exports = {
 												self.DATA.pnpkey4sourcename = lookup.label
 												self.logVerbose('PnP/Key 4 Source Name: ' + lookup.label)
 											}
-										} else if (
-											['1B', '1C', '1D', '1E'].includes(param2) &&
-											param3 == '00'
-										) {
+										} else if (['1B', '1C', '1D', '1E'].includes(param2) && param3 == '00') {
 											// PiP/Key PGM+PVW tally pair — xx00 (PGM) and xx01 (PVW).
 											const tallies = self._parseHexBlock(value, 2)
 											if (tallies) {
@@ -716,7 +713,9 @@ module.exports = {
 											const memoryName = nameBlock.map((b) => String.fromCharCode(parseInt(b, 16))).join('')
 											self.DATA[`memory${memoryNumber}`] = memoryName
 											const displayName = memoryName.replace(/\0/g, '').trimEnd()
-											self.setVariableValues({ [`memoryname_${memoryNumber + 1}`]: displayName })
+											self.setVariableValues({
+												[`memoryname_${memoryNumber + 1}`]: displayName,
+											})
 											self.logVerbose(`Received memory ${memoryNumber + 1} name block: "${displayName}"`)
 										} else if (self._parseHexBlock(value, 1)) {
 											// Single-byte: individual char (legacy path, kept for safety).
@@ -725,11 +724,11 @@ module.exports = {
 											let memoryName = self.DATA[`memory${memoryNumber}`] || '        '
 											if (memoryName.length < 8) memoryName = memoryName.padEnd(8, ' ')
 											memoryName =
-												memoryName.substring(0, memoryCharIndex) +
-												char +
-												memoryName.substring(memoryCharIndex + 1)
+												memoryName.substring(0, memoryCharIndex) + char + memoryName.substring(memoryCharIndex + 1)
 											self.DATA[`memory${memoryNumber}`] = memoryName
-											self.setVariableValues({ [`memoryname_${memoryNumber + 1}`]: memoryName.trimEnd() })
+											self.setVariableValues({
+												[`memoryname_${memoryNumber + 1}`]: memoryName.trimEnd(),
+											})
 										} else {
 											self.log('warn', `DTH:60${param2}${param3} — unexpected value "${value}", ignored`)
 										}

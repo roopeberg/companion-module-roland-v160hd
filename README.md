@@ -60,22 +60,31 @@ The Roland TCP protocol supports reading *N* consecutive bytes in a single `RQH:
 | PiP/Key 1–4 PGM+PVW tally (per key) | 2 | 1 |
 | Memory slot name (8 chars per slot) | 8 | 1 |
 
-### Startup-once vs. continuous polling
+### Multi-speed polling
 
-Data that changes only on explicit user action is read once at connect and then kept in memory via optimistic updates:
+A single timer drives three polling tiers instead of querying everything at the same rate:
 
-- **PiP source** (4 registers) — re-read only when a source-change action is sent.
-- **Freeze state** (18 registers) — re-read only when a freeze action is sent.
-- **Memory slot names** (30 × 8 characters) — cycled through once at startup; re-read after a memory save.
+| Tier | Default interval | Queries | What it updates |
+|---|---|---|---|
+| **Fast** | every tick (500 ms) | 7 | PiP/Key 1–4 tally × 4, PGM+PVW+AUX sources × 3 |
+| **Medium** | every 2nd tick (1 s) | 4 | AUX mutes × 3, one memory slot name |
+| **Background** | every 10th tick (5 s) | 9 | PiP sources × 4, freeze × 1, output assigns × 1, AUX links × 2, transition × 1 |
+
+On connect or reconnect all three tiers fire immediately so Companion has full state before the first scheduled tick.
+
+Optimistic updates keep UI feedback instant: feedbacks reflect a user action at the moment of the button press; the next background poll confirms the device state.
+
+Memory slot names cycle continuously (one slot per medium tick ≈ one full pass every 30 s). A save action resets the cycle index so the renamed slot is picked up within one full cycle.
 
 ### Net result
 
 | | Original module | This module |
 |---|---|---|
-| Queries per poll cycle (steady-state) | **271** (dominated by 240 memory-name reads/cycle) | **13** |
+| Steady-state queries/s (500 ms rate) | **271 × 2 = 542** | **≈ 19.8** |
+| Steady-state queries/s (1 s rate) | **271** | **≈ 9.9** |
 | Startup memory-name load | 240 queries | 30 queries (one 8-byte read per slot) |
-| Tally-triggered source re-poll | 6 queries (sources + mutes) | 3 queries (sources only) |
-| Freeze registers read | 1 (on/off only) | 18 (all select states, startup-once) |
+| Tally-triggered source re-poll | 6 queries (sources + mutes) | 3 queries (sources only, debounced 250 ms) |
+| Freeze registers read | 1 (on/off only) | 18 (all select states) |
 | PGM/PVW tracked | No | Yes |
 | User commands blocked by poll | Yes | Never — priority queue |
 

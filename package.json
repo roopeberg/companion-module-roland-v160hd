@@ -1,6 +1,6 @@
 {
 	"name": "roland-v160hd",
-	"version": "2.3.0",
+	"version": "2.3.1",
 	"main": "index.js",
 	"scripts": {
 		"package": "companion-module-build",

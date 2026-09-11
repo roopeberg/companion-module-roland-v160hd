@@ -167,7 +167,11 @@ module.exports = {
 				let value = options.assign
 				self.sendCommand(address, value)
 
-				const auxKeyMap = { '000011': 'aux1source', '00002E': 'aux2source', '00002F': 'aux3source' }
+				const auxKeyMap = {
+					'000011': 'aux1source',
+					'00002E': 'aux2source',
+					'00002F': 'aux3source',
+				}
 				const dataKey = auxKeyMap[address]
 				if (dataKey) {
 					self.DATA[dataKey] = value
@@ -1917,13 +1921,20 @@ module.exports = {
 
 		// Physical HDMI/SDI source IDs used by PVW select and freeze select presets
 		const PVW_PHYSICAL_SOURCES = [
-			...Array.from({ length: 8 }, (_, i) => ({ id: i.toString(16).padStart(2, '0').toUpperCase(), label: `HDMI ${i + 1}` })),
-			...Array.from({ length: 8 }, (_, i) => ({ id: (8 + i).toString(16).padStart(2, '0').toUpperCase(), label: `SDI ${i + 1}` })),
+			...Array.from({ length: 8 }, (_, i) => ({
+				id: i.toString(16).padStart(2, '0').toUpperCase(),
+				label: `HDMI ${i + 1}`,
+			})),
+			...Array.from({ length: 8 }, (_, i) => ({
+				id: (8 + i).toString(16).padStart(2, '0').toUpperCase(),
+				label: `SDI ${i + 1}`,
+			})),
 		]
 
 		actions.pvwOrFreezeToggle = {
 			name: 'PVW Select / Freeze Toggle (dual-function)',
-			description: 'Selects PVW source normally; when Freeze Select Mode is active, toggles freeze select for the input instead',
+			description:
+				'Selects PVW source normally; when Freeze Select Mode is active, toggles freeze select for the input instead',
 			options: [
 				{
 					type: 'dropdown',

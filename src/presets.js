@@ -703,24 +703,30 @@ module.exports = {
 		const MUTE_DIM = combineRgb(50, 10, 0)
 
 		const AUX_MUTE_DESTS = [
-			{ label: 'AUX 1', address: '012203' },
-			{ label: 'AUX 2', address: '012503' },
-			{ label: 'AUX 3', address: '012603' },
+			{ label: 'AUX 1', address: '012203', fbKey: 'aux1' },
+			{ label: 'AUX 2', address: '012503', fbKey: 'aux2' },
+			{ label: 'AUX 3', address: '012603', fbKey: 'aux3' },
 		]
 
 		const muteIds = []
 		for (const aux of AUX_MUTE_DESTS) {
 			for (const mute of [
-				{ label: 'Mute', value: '01', color: MUTE_ON },
+				{ label: 'Mute', value: '01', color: MUTE_DIM },
 				{ label: 'Unmute', value: '00', color: MUTE_DIM },
 			]) {
 				const id = `aux_mute_${aux.address}_${mute.value}`
 				presets[id] = {
 					name: `${aux.label} ${mute.label}`,
 					type: 'layered',
-					elements: layeredBtn(`${aux.label}\n${mute.label}`, mute.color),
+					elements: layeredBtn(`${aux.label}\n${mute.label}`, MUTE_DIM),
 					steps: [{ down: [{ actionId: 'aux_mute', options: { aux: aux.address, mute: mute.value } }], up: [] }],
-					feedbacks: [],
+					feedbacks: [
+						{
+							feedbackId: 'auxMute',
+							options: { aux: aux.fbKey, mute: mute.value },
+							styleOverrides: bgOverride(MUTE_ON),
+						},
+					],
 				}
 				muteIds.push(id)
 			}

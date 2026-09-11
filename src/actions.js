@@ -1779,8 +1779,10 @@ module.exports = {
 			name: 'Freeze Switch On',
 			options: [],
 			callback: function (_action, _bank) {
-				let address = '020500'
-				self.sendCommand(address, '01')
+				self.sendCommand('020500', '01')
+				self.DATA.freeze = '01'
+				self.checkFeedbacks('freeze')
+				self.updateVariables()
 			},
 		}
 
@@ -1788,8 +1790,10 @@ module.exports = {
 			name: 'Freeze Switch Off',
 			options: [],
 			callback: function (_action, _bank) {
-				let address = '020500'
-				self.sendCommand(address, '00')
+				self.sendCommand('020500', '00')
+				self.DATA.freeze = '00'
+				self.checkFeedbacks('freeze')
+				self.updateVariables()
 			},
 		}
 
@@ -1809,9 +1813,12 @@ module.exports = {
 			],
 			callback: function (action, _bank) {
 				let options = action.options
-				let address = '020501'
-				let value = options.type
-				self.sendCommand(address, value)
+				self.sendCommand('020501', options.type)
+				self.DATA.freeze_type = options.type
+				self.checkFeedbacks('freeze_type_select')
+				self.updateVariables()
+				// Re-read select states — switching type can change device behaviour
+				self.refreshFreezeData()
 			},
 		}
 
@@ -1855,9 +1862,10 @@ module.exports = {
 			],
 			callback: function (action, _bank) {
 				let options = action.options
-				let address = '0205' + options.input
-				let value = options.enable
-				self.sendCommand(address, value)
+				self.sendCommand('0205' + options.input, options.enable)
+				self.DATA[`freeze_select_${options.input}`] = options.enable
+				self.checkFeedbacks('freeze_input_selected')
+				self.updateVariables()
 			},
 		}
 

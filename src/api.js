@@ -167,9 +167,12 @@ module.exports = {
 		//self.getTallyData();
 		self.getPinpKeyData()
 		self.getAuxData()
-		self.getFreezeData()
 		self.getOutputData()
 		self.getAuxLinkData()
+		// Freeze: read once at startup, then only on explicit refresh.
+		if (!self.freezeDataLoaded) {
+			self.getFreezeData()
+		}
 		// Memory names: cycle through all 30 slots once at startup, then stop.
 		// Restarted by save_memory_trigger so a renamed slot is picked up.
 		if (!self.memoryNamesLoaded) {
@@ -220,6 +223,13 @@ module.exports = {
 			const hex = i.toString(16).padStart(2, '0').toUpperCase()
 			self.sendRawCommand(`RQH:0205${hex},000001;`)
 		}
+		// Mark loaded so getData() stops re-issuing these queries each cycle
+		self.freezeDataLoaded = true
+	},
+
+	refreshFreezeData: function () {
+		let self = this
+		self.freezeDataLoaded = false
 	},
 
 	getOutputData: function () {

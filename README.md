@@ -72,7 +72,7 @@ Data that changes only on explicit user action is read once at connect and then 
 
 | | Original module | This module |
 |---|---|---|
-| Queries per poll cycle (steady-state) | **271** (dominated by 240 memory-name reads/cycle) | **14** |
+| Queries per poll cycle (steady-state) | **271** (dominated by 240 memory-name reads/cycle) | **13** |
 | Startup memory-name load | 240 queries | 30 queries (one 8-byte read per slot) |
 | Tally-triggered source re-poll | 6 queries (sources + mutes) | 3 queries (sources only) |
 | Freeze registers read | 1 (on/off only) | 18 (all select states, startup-once) |
@@ -109,6 +109,11 @@ This fork extends and fixes the [original Bitfocus module](https://github.com/bi
 | Polling rate clamping | Original accepted any value; module now clamps to 300–30 000 ms and warns when the configured value is adjusted. |
 | PiP position range | H/V position range corrected to −100…+100 % per the Roland Control Guide; original used wrong bounds. |
 | PiP / DSK RQH byte count | `capturePinp` and `captureDsk` used incorrect byte counts for 2-byte parameters, causing garbled snapshot data. |
+| PiP source preset option key | All 68 PiP 1–4 source preset buttons passed option key `assign` but the action reads `source`; every preset sent `undefined` as the source value. |
+| Memory name NUL termination | Device returns NUL-terminated strings (`MEMORY1\0`). `trimEnd()` does not strip NUL, leaving a trailing invisible character in variable values. Fixed with an explicit `replace(/\0/g, '')` before trimming. |
+| DTH 20 ms gap race | The 20 ms rate limit was only enforced when a second command was already queued. If the queue emptied between two rapid commands, `setImmediate` fired the second command immediately (observed 1 ms gap). Fixed by tracking the wall-clock time of the last send via `_lastHighSentAt`. |
+| Duplicate `getAuxSources` on action | Actions called `getAuxSources()` and the tally notification triggered a second call milliseconds later — up to 6 queries per source change. Fixed with a 250 ms debounce on `getAuxSources`. |
+| `RQH:000110` no data response | USB output assign register was queried every poll cycle but the device never returns a data response, wasting one query per cycle. Removed from steady-state polling. |
 
 ## Documentation
 

@@ -219,11 +219,11 @@ module.exports = {
 	getAuxData: function () {
 		let self = this
 
-		self.sendRawCommand('RQH:002100,000001;') //PGM current source
-		self.sendRawCommand('RQH:002101,000001;') //PVW current source
-		self.sendRawCommand('RQH:000011,000001;') //Aux 1 current source
-		self.sendRawCommand('RQH:00002E,000001;') //Aux 2 current source
-		self.sendRawCommand('RQH:00002F,000001;') //Aux 3 current source
+		// PGM + PVW are consecutive: 002100–002101 (2 bytes).
+		self.sendRawCommand('RQH:002100,000002;')
+		self.sendRawCommand('RQH:000011,000001;') //Aux 1 current source (not contiguous with others)
+		// Aux 2 + Aux 3 source are consecutive: 00002E–00002F (2 bytes).
+		self.sendRawCommand('RQH:00002E,000002;')
 
 		self.sendRawCommand('RQH:012203,000001;') //Aux 1 mute
 		self.sendRawCommand('RQH:012503,000001;') //Aux 2 mute
@@ -248,22 +248,17 @@ module.exports = {
 	getOutputData: function () {
 		let self = this
 
-		self.sendRawCommand('RQH:00000A,000001;') //HDMI 1 output assign
-		self.sendRawCommand('RQH:00000B,000001;') //HDMI 2 output assign
-		self.sendRawCommand('RQH:00000C,000001;') //HDMI 3 output assign
-		self.sendRawCommand('RQH:00000D,000001;') //SDI 1 output assign
-		self.sendRawCommand('RQH:00000E,000001;') //SDI 2 output assign
-		self.sendRawCommand('RQH:00000F,000001;') //SDI 3 output assign
-		self.sendRawCommand('RQH:000110,000001;') //USB output assign
+		// HDMI 1-3 + SDI 1-3 are consecutive: 00000A–00000F (6 bytes).
+		self.sendRawCommand('RQH:00000A,000006;')
+		self.sendRawCommand('RQH:000110,000001;') //USB output assign (not contiguous)
 	},
 
 	getAuxLinkData: function () {
 		let self = this
 
-		self.sendRawCommand('RQH:02010D,000001;') //Aux Link Mode Off/Auto/Manual
-		self.sendRawCommand('RQH:020154,000001;') //Aux 1 link on/off
-		self.sendRawCommand('RQH:020155,000001;') //Aux 2 link on/off
-		self.sendRawCommand('RQH:020156,000001;') //Aux 3 link on/off
+		self.sendRawCommand('RQH:02010D,000001;') //Aux Link Mode Off/Auto/Manual (not contiguous)
+		// Aux 1-3 link on/off are consecutive: 020154–020156 (3 bytes).
+		self.sendRawCommand('RQH:020154,000003;')
 	},
 
 	getInputAssignData: function () {
@@ -423,11 +418,17 @@ module.exports = {
 												}
 											}
 										} else if (param2 == '21' && param3 == '00') {
-											//PGM source
-											self.logVerbose('Received PGM Source: ' + value)
-											self.DATA.pgm_source = self.resolveInputSource(value)
+											if (value.length > 2) {
+												// Multi-byte: RQH:002100,000002 — PGM+PVW in one shot.
+												self.DATA.pgm_source = self.resolveInputSource(value.slice(0, 2))
+												self.DATA.pvw_source = self.resolveInputSource(value.slice(2, 4))
+												self.logVerbose('Received PGM+PVW block: ' + value)
+											} else {
+												self.DATA.pgm_source = self.resolveInputSource(value)
+												self.logVerbose('Received PGM Source: ' + value)
+											}
 										} else if (param2 == '21' && param3 == '01') {
-											//PVW source
+											//PVW source (single-byte path only — multi-byte handled at param3 '00')
 											self.logVerbose('Received PVW Source: ' + value)
 											self.DATA.pvw_source = self.resolveInputSource(value)
 										} else if (param2 == '00' && param3 == '11') {
@@ -435,11 +436,17 @@ module.exports = {
 											self.logVerbose('Received Aux 1 Source: ' + value)
 											self.DATA.aux1source = self.resolveInputSource(value)
 										} else if (param2 == '00' && param3 == '2E') {
-											//aux 2 source
-											self.logVerbose('Received Aux 2 Source: ' + value)
-											self.DATA.aux2source = self.resolveInputSource(value)
+											if (value.length > 2) {
+												// Multi-byte: RQH:00002E,000002 — Aux 2+3 source in one shot.
+												self.DATA.aux2source = self.resolveInputSource(value.slice(0, 2))
+												self.DATA.aux3source = self.resolveInputSource(value.slice(2, 4))
+												self.logVerbose('Received Aux 2+3 Source block: ' + value)
+											} else {
+												self.DATA.aux2source = self.resolveInputSource(value)
+												self.logVerbose('Received Aux 2 Source: ' + value)
+											}
 										} else if (param2 == '00' && param3 == '2F') {
-											//aux 3 source
+											//aux 3 source (single-byte path only — multi-byte handled at param3 '2E')
 											self.logVerbose('Received Aux 3 Source: ' + value)
 											self.DATA.aux3source = self.resolveInputSource(value)
 										} else if (param2 == '1B' && param3 == '02') {
@@ -545,37 +552,40 @@ module.exports = {
 									}
 
 									if (param1 == '00' && param2 == '00' && param3 == '0A') {
-										//hdmi 1 output assign
-										self.DATA.hdmi1assign = value
-										self.logVerbose('Received HDMI 1 Output Assign: ' + value)
+										if (value.length > 2) {
+											// Multi-byte: RQH:00000A,000006 — HDMI 1-3 + SDI 1-3 in one shot.
+											const outputKeys = ['hdmi1assign', 'hdmi2assign', 'hdmi3assign', 'sdi1assign', 'sdi2assign', 'sdi3assign']
+											for (let i = 0; i < outputKeys.length && i * 2 < value.length; i++) {
+												self.DATA[outputKeys[i]] = value.slice(i * 2, i * 2 + 2)
+											}
+											self.logVerbose('Received output assign block: ' + value)
+										} else {
+											self.DATA.hdmi1assign = value
+											self.logVerbose('Received HDMI 1 Output Assign: ' + value)
+										}
 									}
 
 									if (param1 == '00' && param2 == '00' && param3 == '0B') {
-										//hdmi 2 output assign
 										self.DATA.hdmi2assign = value
 										self.logVerbose('Received HDMI 2 Output Assign: ' + value)
 									}
 
 									if (param1 == '00' && param2 == '00' && param3 == '0C') {
-										//hdmi 3 output assign
 										self.DATA.hdmi3assign = value
 										self.logVerbose('Received HDMI 3 Output Assign: ' + value)
 									}
 
 									if (param1 == '00' && param2 == '00' && param3 == '0D') {
-										//sdi 1 output assign
 										self.DATA.sdi1assign = value
 										self.logVerbose('Received SDI 1 Output Assign: ' + value)
 									}
 
 									if (param1 == '00' && param2 == '00' && param3 == '0E') {
-										//sdi 2 output assign
 										self.DATA.sdi2assign = value
 										self.logVerbose('Received SDI 2 Output Assign: ' + value)
 									}
 
 									if (param1 == '00' && param2 == '00' && param3 == '0F') {
-										//sdi 3 output assign
 										self.DATA.sdi3assign = value
 										self.logVerbose('Received SDI 3 Output Assign: ' + value)
 									}
@@ -593,19 +603,24 @@ module.exports = {
 									}
 
 									if (param1 == '02' && param2 == '01' && param3 == '54') {
-										//aux 1 link
-										self.DATA.aux1link = value
-										self.logVerbose('Received Aux 1 Link: ' + value)
+										if (value.length > 2) {
+											// Multi-byte: RQH:020154,000003 — Aux 1-3 link in one shot.
+											self.DATA.aux1link = value.slice(0, 2)
+											self.DATA.aux2link = value.slice(2, 4)
+											self.DATA.aux3link = value.slice(4, 6)
+											self.logVerbose('Received Aux link block: ' + value)
+										} else {
+											self.DATA.aux1link = value
+											self.logVerbose('Received Aux 1 Link: ' + value)
+										}
 									}
 
 									if (param1 == '02' && param2 == '01' && param3 == '55') {
-										//aux 2 link
 										self.DATA.aux2link = value
 										self.logVerbose('Received Aux 2 Link: ' + value)
 									}
 
 									if (param1 == '02' && param2 == '01' && param3 == '56') {
-										//aux 3 link
 										self.DATA.aux3link = value
 										self.logVerbose('Received Aux 3 Link: ' + value)
 									}

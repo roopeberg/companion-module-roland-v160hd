@@ -222,9 +222,9 @@ module.exports = {
 		let self = this
 
 		// Debounce: tally-triggered re-polls and action-triggered re-polls can
-		// arrive within milliseconds of each other. Skip if queried within 150 ms.
+		// arrive within milliseconds of each other. Skip if queried within 250 ms.
 		const now = Date.now()
-		if (now - (self._lastAuxSourceQuery || 0) < 150) return
+		if (now - (self._lastAuxSourceQuery || 0) < 250) return
 		self._lastAuxSourceQuery = now
 
 		// PGM + PVW are consecutive: 002100–002101 (2 bytes).

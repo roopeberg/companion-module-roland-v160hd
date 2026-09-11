@@ -5,31 +5,66 @@ const assert = require('node:assert/strict')
 
 const api = require('../src/api.js')
 
+// Minimal instance that satisfies every branch updateData may touch.
 function makeInstance() {
-	const instance = {
+	const warnings = []
+	const inst = {
 		DATA: {},
-		config: { verbose: false },
-		log: () => {},
+		config: { verbose: false, password: 'test' },
+		MODEL: '',
+		VERSION: '',
 		freezeDataLoaded: false,
-		resolveInputSource: (v) => v,
+		pipSourceDataLoaded: false,
+		memoryNamesLoaded: false,
+		memoryNameIndex: 0,
+		CHOICES_PNPKEY_SOURCES: [],
+		socket: { send: () => {}, isConnected: true },
+		_highQueue: [],
+		_lowQueue: [],
+		_drainScheduled: false,
+		_drainGeneration: 0,
+		log: (_level, msg) => {
+			if (_level === 'warn') warnings.push(msg)
+		},
 		logVerbose: () => {},
 		checkFeedbacks: () => {},
 		checkVariables: () => {},
+		checkAllFeedbacks: () => {},
+		updateStatus: () => {},
+		startInterval: () => {},
+		subscribeToTally: () => {},
+		sendRawCommand: () => {},
+		updateTally: () => {},
+		resolveInputSource: (v) => v,
+		getAuxData: () => {},
+		getNextMemoryName: () => {},
 	}
-	instance._parseHexBlock = api._parseHexBlock.bind(instance)
-	return instance
+	inst._parseHexBlock = api._parseHexBlock.bind(inst)
+	inst._drainBatch = api._drainBatch.bind(inst)
+	inst._clearQueue = api._clearQueue.bind(inst)
+	inst._sendDirect = api._sendDirect.bind(inst)
+	inst.updateData = api.updateData.bind(inst)
+	inst._warnings = warnings
+	return inst
 }
+
+// ---------------------------------------------------------------------------
+// _parseHexBlock unit tests
+// ---------------------------------------------------------------------------
 
 describe('_parseHexBlock', () => {
 	test('returns array of uppercased byte strings for valid input', () => {
 		const inst = makeInstance()
-		const result = inst._parseHexBlock('0304', 2)
-		assert.deepEqual(result, ['03', '04'])
+		assert.deepEqual(inst._parseHexBlock('0304', 2), ['03', '04'])
 	})
 
-	test('returns null when length does not match expectedBytes', () => {
+	test('returns null when length is shorter than expectedBytes * 2', () => {
 		const inst = makeInstance()
 		assert.equal(inst._parseHexBlock('03', 2), null)
+	})
+
+	test('returns null when length is longer than expectedBytes * 2', () => {
+		const inst = makeInstance()
 		assert.equal(inst._parseHexBlock('030405', 2), null)
 	})
 
@@ -46,8 +81,7 @@ describe('_parseHexBlock', () => {
 
 	test('uppercases a-f to A-F', () => {
 		const inst = makeInstance()
-		const result = inst._parseHexBlock('abcd', 2)
-		assert.deepEqual(result, ['AB', 'CD'])
+		assert.deepEqual(inst._parseHexBlock('abcd', 2), ['AB', 'CD'])
 	})
 
 	test('handles 18-byte freeze block', () => {
@@ -61,62 +95,110 @@ describe('_parseHexBlock', () => {
 	})
 })
 
-describe('Freeze block parser (updateData integration)', () => {
-	function parseFreeze(value) {
-		const inst = makeInstance()
-		// Simulate the parser branch directly.
-		const freezeBlock = inst._parseHexBlock(value, 18)
-		if (!freezeBlock) return null
-		inst.DATA.freeze = freezeBlock[0]
-		inst.DATA.freeze_type = freezeBlock[1]
-		for (let i = 2; i < freezeBlock.length; i++) {
-			const addrHex = i.toString(16).padStart(2, '0').toUpperCase()
-			inst.DATA[`freeze_select_${addrHex}`] = freezeBlock[i]
-		}
-		inst.freezeDataLoaded = true
-		return inst
-	}
+// ---------------------------------------------------------------------------
+// Freeze block — via real updateData
+// ---------------------------------------------------------------------------
 
-	test('parses all 18 bytes into correct DATA keys', () => {
-		const hex = '010000000101010100010001010101010101'
-		const inst = parseFreeze(hex)
-		assert.ok(inst !== null)
+describe('Freeze block (updateData)', () => {
+	test('18-byte block populates freeze, freeze_type and all freeze_select keys', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:020500,010000000101010100010001010101010101')
 		assert.equal(inst.DATA.freeze, '01')
 		assert.equal(inst.DATA.freeze_type, '00')
 		assert.equal(inst.DATA.freeze_select_02, '00')
 		assert.equal(inst.DATA.freeze_select_11, '01')
 	})
 
-	test('sets freezeDataLoaded to true on successful parse', () => {
-		const hex = '000000000101010100010001010101010101'
-		const inst = parseFreeze(hex)
+	test('sets freezeDataLoaded after a valid 18-byte block', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:020500,000000000101010100010001010101010101')
 		assert.equal(inst.freezeDataLoaded, true)
 	})
 
-	test('rejects a value with wrong length (not 36 hex chars)', () => {
+	test('does NOT set freezeDataLoaded for a wrong-length value', () => {
 		const inst = makeInstance()
-		const result = inst._parseHexBlock('0001', 18)
-		assert.equal(result, null)
+		inst.updateData('DTH:020500,0001')
+		assert.equal(inst.freezeDataLoaded, false)
+		assert.equal(inst.DATA.freeze, undefined)
+	})
+
+	test('invalid freeze block logs a warning and stores nothing', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:020500,0001')
+		assert.ok(inst._warnings.some((w) => w.includes('0205') && w.includes('0001')))
+		assert.equal(inst.DATA.freeze, undefined)
+	})
+
+	test('single-byte freeze state (optimistic update) is accepted', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:020500,01')
+		assert.equal(inst.DATA.freeze, '01')
 		assert.equal(inst.freezeDataLoaded, false)
 	})
 
-	test('rejects a value with non-hex characters', () => {
+	test('non-hex characters in freeze value are rejected', () => {
 		const inst = makeInstance()
 		const badHex = '00000000010101010001000101010101010Z'
-		const result = inst._parseHexBlock(badHex, 18)
-		assert.equal(result, null)
+		inst.updateData(`DTH:020500,${badHex}`)
+		assert.equal(inst.DATA.freeze, undefined)
 	})
 })
 
-describe('Multi-byte output assign parser', () => {
-	test('parses 6-byte output block into correct keys', () => {
+// ---------------------------------------------------------------------------
+// PGM+PVW block — via real updateData
+// ---------------------------------------------------------------------------
+
+describe('PGM+PVW block (updateData)', () => {
+	test('2-byte block populates both pgm_source and pvw_source', () => {
 		const inst = makeInstance()
-		const outputKeys = ['hdmi1assign', 'hdmi2assign', 'hdmi3assign', 'sdi1assign', 'sdi2assign', 'sdi3assign']
-		const outputs = inst._parseHexBlock('000308010405', 6)
-		assert.ok(outputs !== null)
-		for (let i = 0; i < outputKeys.length; i++) {
-			inst.DATA[outputKeys[i]] = outputs[i]
-		}
+		inst.updateData('DTH:002100,0302')
+		assert.equal(inst.DATA.pgm_source, '03')
+		assert.equal(inst.DATA.pvw_source, '02')
+	})
+
+	test('single-byte value sets only pgm_source', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:002100,03')
+		assert.equal(inst.DATA.pgm_source, '03')
+		assert.equal(inst.DATA.pvw_source, undefined)
+	})
+
+	test('invalid value (wrong length) is rejected with a warning', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:002100,01F')
+		assert.ok(inst._warnings.some((w) => w.includes('002100')))
+		assert.equal(inst.DATA.pgm_source, undefined)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Aux 2+3 source block — via real updateData
+// ---------------------------------------------------------------------------
+
+describe('Aux 2+3 source block (updateData)', () => {
+	test('2-byte block populates aux2source and aux3source', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:00002E,0304')
+		assert.equal(inst.DATA.aux2source, '03')
+		assert.equal(inst.DATA.aux3source, '04')
+	})
+
+	test('invalid value (3 hex chars, not 2 or 4) is rejected with a warning', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:00002E,01F')
+		assert.ok(inst._warnings.some((w) => w.includes('00002E')))
+		assert.equal(inst.DATA.aux2source, undefined)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Output assign block — via real updateData
+// ---------------------------------------------------------------------------
+
+describe('Output assign block (updateData)', () => {
+	test('6-byte block populates all six output keys', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:00000A,000308010405')
 		assert.equal(inst.DATA.hdmi1assign, '00')
 		assert.equal(inst.DATA.hdmi2assign, '03')
 		assert.equal(inst.DATA.hdmi3assign, '08')
@@ -125,29 +207,31 @@ describe('Multi-byte output assign parser', () => {
 		assert.equal(inst.DATA.sdi3assign, '05')
 	})
 
-	test('rejects a 5-byte value (wrong length)', () => {
+	test('invalid value (4 hex chars instead of 12) is rejected', () => {
 		const inst = makeInstance()
-		assert.equal(inst._parseHexBlock('0003080104', 6), null)
+		inst.updateData('DTH:00000A,0001')
+		assert.ok(inst._warnings.some((w) => w.includes('00000A')))
+		assert.equal(inst.DATA.hdmi1assign, undefined)
 	})
 })
 
-describe('Multi-byte PGM+PVW parser', () => {
-	test('parses 2-byte block into pgm_source and pvw_source', () => {
+// ---------------------------------------------------------------------------
+// Aux link block — via real updateData
+// ---------------------------------------------------------------------------
+
+describe('Aux link block (updateData)', () => {
+	test('3-byte block populates aux1link, aux2link, aux3link', () => {
 		const inst = makeInstance()
-		const pgmPvw = inst._parseHexBlock('0002', 2)
-		assert.deepEqual(pgmPvw, ['00', '02'])
+		inst.updateData('DTH:020154,000100')
+		assert.equal(inst.DATA.aux1link, '00')
+		assert.equal(inst.DATA.aux2link, '01')
+		assert.equal(inst.DATA.aux3link, '00')
 	})
 
-	test('single-byte value is rejected by _parseHexBlock(value, 2)', () => {
+	test('invalid value (4 hex chars instead of 6) is rejected', () => {
 		const inst = makeInstance()
-		assert.equal(inst._parseHexBlock('03', 2), null)
-	})
-})
-
-describe('Multi-byte Aux link parser', () => {
-	test('parses 3-byte block into aux1/2/3 link', () => {
-		const inst = makeInstance()
-		const auxLinks = inst._parseHexBlock('000100', 3)
-		assert.deepEqual(auxLinks, ['00', '01', '00'])
+		inst.updateData('DTH:020154,0100')
+		assert.ok(inst._warnings.some((w) => w.includes('020154')))
+		assert.equal(inst.DATA.aux1link, undefined)
 	})
 })

@@ -428,9 +428,11 @@ module.exports = {
 												self.DATA.pgm_source = self.resolveInputSource(pgmPvw[0])
 												self.DATA.pvw_source = self.resolveInputSource(pgmPvw[1])
 												self.logVerbose('Received PGM+PVW block: ' + value)
-											} else {
+											} else if (self._parseHexBlock(value, 1)) {
 												self.DATA.pgm_source = self.resolveInputSource(value)
 												self.logVerbose('Received PGM Source: ' + value)
+											} else {
+												self.log('warn', `DTH:002100 — unexpected value "${value}", ignored`)
 											}
 										} else if (param2 == '21' && param3 == '01') {
 											//PVW source (single-byte path only — multi-byte handled at param3 '00')
@@ -447,9 +449,11 @@ module.exports = {
 												self.DATA.aux2source = self.resolveInputSource(aux23[0])
 												self.DATA.aux3source = self.resolveInputSource(aux23[1])
 												self.logVerbose('Received Aux 2+3 Source block: ' + value)
-											} else {
+											} else if (self._parseHexBlock(value, 1)) {
 												self.DATA.aux2source = self.resolveInputSource(value)
 												self.logVerbose('Received Aux 2 Source: ' + value)
+											} else {
+												self.log('warn', `DTH:00002E — unexpected value "${value}", ignored`)
 											}
 										} else if (param2 == '00' && param3 == '2F') {
 											//aux 3 source (single-byte path only — multi-byte handled at param3 '2E')
@@ -517,7 +521,7 @@ module.exports = {
 											}
 											self.freezeDataLoaded = true
 											self.logVerbose('Received freeze block: ' + value)
-										} else {
+										} else if (self._parseHexBlock(value, 1)) {
 											// Single-byte response — optimistic update from an action.
 											const p3 = parseInt(param3, 16)
 											if (param3 == '00') {
@@ -530,6 +534,8 @@ module.exports = {
 												self.DATA[`freeze_select_${param3}`] = value
 												self.logVerbose(`Received Freeze Select ${param3}: ${value}`)
 											}
+										} else {
+											self.log('warn', `DTH:0205${param3} — unexpected value "${value}", ignored`)
 										}
 									}
 
@@ -567,9 +573,11 @@ module.exports = {
 												self.DATA[outputKeys[i]] = outputs[i]
 											}
 											self.logVerbose('Received output assign block: ' + value)
-										} else {
+										} else if (self._parseHexBlock(value, 1)) {
 											self.DATA.hdmi1assign = value
 											self.logVerbose('Received HDMI 1 Output Assign: ' + value)
+										} else {
+											self.log('warn', `DTH:00000A — unexpected value "${value}", ignored`)
 										}
 									}
 
@@ -618,9 +626,11 @@ module.exports = {
 											self.DATA.aux2link = auxLinks[1]
 											self.DATA.aux3link = auxLinks[2]
 											self.logVerbose('Received Aux link block: ' + value)
-										} else {
+										} else if (self._parseHexBlock(value, 1)) {
 											self.DATA.aux1link = value
 											self.logVerbose('Received Aux 1 Link: ' + value)
+										} else {
+											self.log('warn', `DTH:020154 — unexpected value "${value}", ignored`)
 										}
 									}
 

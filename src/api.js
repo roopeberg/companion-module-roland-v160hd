@@ -75,6 +75,11 @@ module.exports = {
 				if (socket !== self.socket) return
 				self.log('info', 'Connected — waiting for auth prompt')
 				self.tcpBuffer = ''
+				// Reset startup-once flags so all device state is re-read after
+				// every (re)connect, including automatic TCPHelper reconnects.
+				self.pipSourceDataLoaded = false
+				self.freezeDataLoaded = false
+				self.memoryNamesLoaded = false
 				self.updateStatus(InstanceStatus.Connecting, 'Authenticating')
 			})
 
@@ -235,9 +240,8 @@ module.exports = {
 
 		// Read all 18 freeze bytes in one query: 020500 (freeze on/off) through
 		// 020511 (SDI IN 8 select) = 0x12 consecutive bytes.
+		// freezeDataLoaded is set to true only after the block response is parsed.
 		self.sendRawCommand('RQH:020500,000012;')
-		// Mark loaded so getData() stops re-issuing this query each cycle
-		self.freezeDataLoaded = true
 	},
 
 	refreshFreezeData: function () {
@@ -418,10 +422,11 @@ module.exports = {
 												}
 											}
 										} else if (param2 == '21' && param3 == '00') {
-											if (value.length > 2) {
+											const pgmPvw = self._parseHexBlock(value, 2)
+											if (pgmPvw) {
 												// Multi-byte: RQH:002100,000002 — PGM+PVW in one shot.
-												self.DATA.pgm_source = self.resolveInputSource(value.slice(0, 2))
-												self.DATA.pvw_source = self.resolveInputSource(value.slice(2, 4))
+												self.DATA.pgm_source = self.resolveInputSource(pgmPvw[0])
+												self.DATA.pvw_source = self.resolveInputSource(pgmPvw[1])
 												self.logVerbose('Received PGM+PVW block: ' + value)
 											} else {
 												self.DATA.pgm_source = self.resolveInputSource(value)
@@ -436,10 +441,11 @@ module.exports = {
 											self.logVerbose('Received Aux 1 Source: ' + value)
 											self.DATA.aux1source = self.resolveInputSource(value)
 										} else if (param2 == '00' && param3 == '2E') {
-											if (value.length > 2) {
+											const aux23 = self._parseHexBlock(value, 2)
+											if (aux23) {
 												// Multi-byte: RQH:00002E,000002 — Aux 2+3 source in one shot.
-												self.DATA.aux2source = self.resolveInputSource(value.slice(0, 2))
-												self.DATA.aux3source = self.resolveInputSource(value.slice(2, 4))
+												self.DATA.aux2source = self.resolveInputSource(aux23[0])
+												self.DATA.aux3source = self.resolveInputSource(aux23[1])
 												self.logVerbose('Received Aux 2+3 Source block: ' + value)
 											} else {
 												self.DATA.aux2source = self.resolveInputSource(value)
@@ -500,24 +506,19 @@ module.exports = {
 									}
 
 									if (param1 == '02' && param2 == '05') {
-										if (value.length > 2) {
+										const freezeBlock = param3 === '00' ? self._parseHexBlock(value, 18) : null
+										if (freezeBlock) {
 											// Multi-byte response from RQH:020500,000012 — parse all 18 bytes at once.
-											for (let i = 0; i * 2 < value.length && i <= 0x11; i++) {
-												const byteVal = value.slice(i * 2, i * 2 + 2)
-												if (i === 0) {
-													self.DATA.freeze = byteVal
-												} else if (i === 1) {
-													self.DATA.freeze_type = byteVal
-												} else {
-													const addrHex = i.toString(16).padStart(2, '0').toUpperCase()
-													self.DATA[`freeze_select_${addrHex}`] = byteVal
-												}
+											self.DATA.freeze = freezeBlock[0]
+											self.DATA.freeze_type = freezeBlock[1]
+											for (let i = 2; i < freezeBlock.length; i++) {
+												const addrHex = i.toString(16).padStart(2, '0').toUpperCase()
+												self.DATA[`freeze_select_${addrHex}`] = freezeBlock[i]
 											}
+											self.freezeDataLoaded = true
 											self.logVerbose('Received freeze block: ' + value)
-											self.checkFeedbacks('freeze', 'freeze_type_select', 'freeze_input_selected')
-											self.checkVariables()
 										} else {
-											// Single-byte response — individual query or optimistic update echo.
+											// Single-byte response — optimistic update from an action.
 											const p3 = parseInt(param3, 16)
 											if (param3 == '00') {
 												self.DATA.freeze = value
@@ -528,7 +529,6 @@ module.exports = {
 											} else if (p3 >= 2 && p3 <= 0x11) {
 												self.DATA[`freeze_select_${param3}`] = value
 												self.logVerbose(`Received Freeze Select ${param3}: ${value}`)
-												self.checkFeedbacks('freeze_input_selected')
 											}
 										}
 									}
@@ -552,11 +552,19 @@ module.exports = {
 									}
 
 									if (param1 == '00' && param2 == '00' && param3 == '0A') {
-										if (value.length > 2) {
+										const outputKeys = [
+											'hdmi1assign',
+											'hdmi2assign',
+											'hdmi3assign',
+											'sdi1assign',
+											'sdi2assign',
+											'sdi3assign',
+										]
+										const outputs = self._parseHexBlock(value, outputKeys.length)
+										if (outputs) {
 											// Multi-byte: RQH:00000A,000006 — HDMI 1-3 + SDI 1-3 in one shot.
-											const outputKeys = ['hdmi1assign', 'hdmi2assign', 'hdmi3assign', 'sdi1assign', 'sdi2assign', 'sdi3assign']
-											for (let i = 0; i < outputKeys.length && i * 2 < value.length; i++) {
-												self.DATA[outputKeys[i]] = value.slice(i * 2, i * 2 + 2)
+											for (let i = 0; i < outputKeys.length; i++) {
+												self.DATA[outputKeys[i]] = outputs[i]
 											}
 											self.logVerbose('Received output assign block: ' + value)
 										} else {
@@ -603,11 +611,12 @@ module.exports = {
 									}
 
 									if (param1 == '02' && param2 == '01' && param3 == '54') {
-										if (value.length > 2) {
+										const auxLinks = self._parseHexBlock(value, 3)
+										if (auxLinks) {
 											// Multi-byte: RQH:020154,000003 — Aux 1-3 link in one shot.
-											self.DATA.aux1link = value.slice(0, 2)
-											self.DATA.aux2link = value.slice(2, 4)
-											self.DATA.aux3link = value.slice(4, 6)
+											self.DATA.aux1link = auxLinks[0]
+											self.DATA.aux2link = auxLinks[1]
+											self.DATA.aux3link = auxLinks[2]
 											self.logVerbose('Received Aux link block: ' + value)
 										} else {
 											self.DATA.aux1link = value
@@ -797,6 +806,19 @@ module.exports = {
 		if (self.config.verbose) {
 			self.log('debug', message)
 		}
+	},
+
+	// Parse a multi-byte hex block from a DTH response value.
+	// Returns an array of two-char uppercase hex strings (one per byte) when
+	// value is exactly expectedBytes * 2 hex characters, null otherwise.
+	_parseHexBlock: function (value, expectedBytes) {
+		if (value.length !== expectedBytes * 2) return null
+		if (!/^[0-9A-Fa-f]+$/.test(value)) return null
+		const out = []
+		for (let i = 0; i < expectedBytes; i++) {
+			out.push(value.slice(i * 2, i * 2 + 2).toUpperCase())
+		}
+		return out
 	},
 
 	calculateBytes: function (value, scale = 10) {

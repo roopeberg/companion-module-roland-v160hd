@@ -667,7 +667,7 @@ module.exports = {
 
 		let cmd = 'DTH:' + address + ',' + value + ';'
 		self.logVerbose('Sending command: ' + cmd)
-		self.sendRawCommand(cmd)
+		self.sendRawCommand(cmd, 'high')
 	},
 
 	requestData: function (command) {
@@ -677,21 +677,57 @@ module.exports = {
 		self.sendRawCommand(cmd)
 	},
 
-	sendRawCommand: function (command) {
+	// Enqueue a command. priority 'high' jumps ahead of all pending poll queries.
+	sendRawCommand: function (command, priority = 'low') {
 		let self = this
 
 		let cmd = String(command).replace(/[\r\n]+$/g, '')
 		if (!cmd.endsWith(';')) {
 			cmd += ';'
 		}
-		cmd += '\n'
+
+		if (priority === 'high') {
+			self._highQueue.push(cmd)
+		} else {
+			self._lowQueue.push(cmd)
+		}
+
+		if (!self._drainScheduled) {
+			self._drainScheduled = true
+			setImmediate(() => self._drainBatch())
+		}
+	},
+
+	_drainBatch: function () {
+		let self = this
+		self._drainScheduled = false
+
+		// Always flush all high-priority commands first
+		while (self._highQueue.length > 0) {
+			self._sendDirect(self._highQueue.shift())
+		}
+
+		// Send a small batch of low-priority so high-priority can jump in next time
+		const BATCH = 4
+		for (let i = 0; i < BATCH && self._lowQueue.length > 0; i++) {
+			self._sendDirect(self._lowQueue.shift())
+		}
+
+		if (self._highQueue.length > 0 || self._lowQueue.length > 0) {
+			self._drainScheduled = true
+			setImmediate(() => self._drainBatch())
+		}
+	},
+
+	_sendDirect: function (cmd) {
+		let self = this
+		const raw = cmd + '\n'
 
 		if (self.socket !== undefined && self.socket.isConnected) {
 			if (self.config.verbose) {
-				self.log('debug', 'Sending: ' + cmd)
+				self.log('debug', 'Sending: ' + raw)
 			}
-
-			self.socket.send(cmd)
+			self.socket.send(raw)
 		} else {
 			if (self.config.verbose) {
 				self.log('warn', 'Unable to send: Socket not connected.')

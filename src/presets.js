@@ -697,6 +697,97 @@ module.exports = {
 		addSection('memory_load', 'Memory Load', loadIds)
 		addSection('memory_save', 'Memory Save', saveIds)
 
+		// ── AUX mute ────────────────────────────────────────────────────────────
+
+		const MUTE_ON = combineRgb(180, 30, 0)
+		const MUTE_DIM = combineRgb(50, 10, 0)
+
+		const AUX_MUTE_DESTS = [
+			{ label: 'AUX 1', address: '012203' },
+			{ label: 'AUX 2', address: '012503' },
+			{ label: 'AUX 3', address: '012603' },
+		]
+
+		const muteIds = []
+		for (const aux of AUX_MUTE_DESTS) {
+			for (const mute of [
+				{ label: 'Mute', value: '01', color: MUTE_ON },
+				{ label: 'Unmute', value: '00', color: MUTE_DIM },
+			]) {
+				const id = `aux_mute_${aux.address}_${mute.value}`
+				presets[id] = {
+					name: `${aux.label} ${mute.label}`,
+					type: 'layered',
+					elements: layeredBtn(`${aux.label}\n${mute.label}`, mute.color),
+					steps: [{ down: [{ actionId: 'aux_mute', options: { aux: aux.address, mute: mute.value } }], up: [] }],
+					feedbacks: [],
+				}
+				muteIds.push(id)
+			}
+		}
+		addSection('aux_mute', 'AUX Mute', muteIds)
+
+		// ── Transition type ──────────────────────────────────────────────────────
+
+		const TRANS_COLOR = combineRgb(0, 80, 160)
+		const TRANS_DIM = combineRgb(0, 25, 50)
+
+		const transTypeIds = []
+		for (const t of self.CHOICES_TRANSITION_TYPES) {
+			const id = `transition_type_${t.id}`
+			presets[id] = {
+				name: `Transition: ${t.label}`,
+				type: 'layered',
+				elements: layeredBtn(t.label, TRANS_DIM),
+				steps: [{ down: [{ actionId: 'set_transition_type', options: { type: t.id } }], up: [] }],
+				feedbacks: [],
+			}
+			transTypeIds.push(id)
+		}
+		addSection('transition_type', 'Transition Type', transTypeIds)
+
+		const mixTypeIds = []
+		for (const t of self.CHOICES_MIX_TYPES) {
+			const id = `mix_type_${t.id}`
+			presets[id] = {
+				name: `Mix Type: ${t.label}`,
+				type: 'layered',
+				elements: layeredBtn(`Mix\n${t.label}`, TRANS_DIM),
+				steps: [{ down: [{ actionId: 'set_mix_type', options: { type: t.id } }], up: [] }],
+				feedbacks: [],
+			}
+			mixTypeIds.push(id)
+		}
+		addSection('mix_type', 'Mix Type', mixTypeIds)
+
+		const wipeTypeIds = []
+		for (const t of self.CHOICES_WIPE_TYPES) {
+			const id = `wipe_type_${t.id}`
+			presets[id] = {
+				name: `Wipe: ${t.label}`,
+				type: 'layered',
+				elements: layeredBtn(`Wipe\n${t.label}`, TRANS_DIM),
+				steps: [{ down: [{ actionId: 'set_wipe_type', options: { type: t.id } }], up: [] }],
+				feedbacks: [],
+			}
+			wipeTypeIds.push(id)
+		}
+		addSection('wipe_type', 'Wipe Type', wipeTypeIds)
+
+		const wipeDirIds = []
+		for (const d of self.CHOICES_WIPE_DIRECTIONS) {
+			const id = `wipe_dir_${d.id}`
+			presets[id] = {
+				name: `Wipe Direction: ${d.label}`,
+				type: 'layered',
+				elements: layeredBtn(`Wipe\n${d.label}`, TRANS_COLOR),
+				steps: [{ down: [{ actionId: 'set_wipe_direction', options: { direction: d.id } }], up: [] }],
+				feedbacks: [],
+			}
+			wipeDirIds.push(id)
+		}
+		addSection('wipe_direction', 'Wipe Direction', wipeDirIds)
+
 		self.setPresetDefinitions(structure, presets)
 	},
 }

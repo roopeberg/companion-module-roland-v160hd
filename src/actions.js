@@ -1576,7 +1576,7 @@ module.exports = {
 				if (lookup) self.DATA[`pnpkey${keyIndex}sourcename`] = lookup.label
 				self.refreshPipSourceData()
 				self.checkFeedbacks('pnpKeySource')
-				self.updateVariables()
+				self.checkVariables()
 			},
 		}
 
@@ -1791,7 +1791,7 @@ module.exports = {
 				self.sendCommand('020500', '01')
 				self.DATA.freeze = '01'
 				self.checkFeedbacks('freeze')
-				self.updateVariables()
+				self.checkVariables()
 			},
 		}
 
@@ -1802,7 +1802,7 @@ module.exports = {
 				self.sendCommand('020500', '00')
 				self.DATA.freeze = '00'
 				self.checkFeedbacks('freeze')
-				self.updateVariables()
+				self.checkVariables()
 			},
 		}
 
@@ -1825,7 +1825,7 @@ module.exports = {
 				self.sendCommand('020501', options.type)
 				self.DATA.freeze_type = options.type
 				self.checkFeedbacks('freeze_type_select')
-				self.updateVariables()
+				self.checkVariables()
 				// Re-read select states — switching type can change device behaviour
 				self.refreshFreezeData()
 			},
@@ -1874,7 +1874,7 @@ module.exports = {
 				self.sendCommand('0205' + options.input, options.enable)
 				self.DATA[`freeze_select_${options.input}`] = options.enable
 				self.checkFeedbacks('freeze_input_selected')
-				self.updateVariables()
+				self.checkVariables()
 			},
 		}
 
@@ -1953,7 +1953,7 @@ module.exports = {
 					self.sendCommand(`0205${addrKey}`, newVal)
 					self.DATA[`freeze_select_${addrKey}`] = newVal
 					self.checkFeedbacks('freeze_input_selected')
-					self.updateVariables()
+					self.checkVariables()
 				} else {
 					self.sendCommand('002101', options.input)
 					self.getAuxData()

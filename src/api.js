@@ -80,6 +80,7 @@ module.exports = {
 				self.pipSourceDataLoaded = false
 				self.freezeDataLoaded = false
 				self.memoryNamesLoaded = false
+				self.transitionDataLoaded = false
 				self.updateStatus(InstanceStatus.Connecting, 'Authenticating')
 			})
 
@@ -191,6 +192,10 @@ module.exports = {
 		if (!self.memoryNamesLoaded) {
 			self.getNextMemoryName()
 		}
+		// Transition settings: read once at startup, then only on explicit refresh.
+		if (!self.transitionDataLoaded) {
+			self.getTransitionData()
+		}
 	},
 
 	getPinpKeyTally: function () {
@@ -267,6 +272,15 @@ module.exports = {
 
 		// HDMI 1-3 + SDI 1-3 are consecutive: 00000A–00000F (6 bytes).
 		self.sendRawCommand('RQH:00000A,000006;')
+	},
+
+	getTransitionData: function () {
+		let self = this
+
+		// Transition type, mix type, wipe type, wipe direction are consecutive:
+		// 001800–001803 (4 bytes) — read in one multi-byte query.
+		// transitionDataLoaded is set to true after the block response is parsed.
+		self.sendRawCommand('RQH:001800,000004;')
 	},
 
 	getAuxLinkData: function () {
@@ -581,6 +595,36 @@ module.exports = {
 										//aux 3 mute
 										self.DATA.aux3mute = value
 										self.logVerbose('Received Aux 3 Mute: ' + value)
+									}
+
+									if (param1 == '00' && param2 == '18') {
+										// Transition settings: 001800–001803 (type, mix, wipe, direction).
+										const transKeys = ['transition_type', 'mix_type', 'wipe_type', 'wipe_direction']
+										if (param3 === '00') {
+											const block = self._parseHexBlock(value, 4)
+											if (block) {
+												// Multi-byte: RQH:001800,000004 — all 4 settings in one shot.
+												for (let i = 0; i < transKeys.length; i++) {
+													self.DATA[transKeys[i]] = parseInt(block[i], 16)
+												}
+												self.transitionDataLoaded = true
+												self.logVerbose('Received transition block: ' + value)
+											} else if (self._parseHexBlock(value, 1)) {
+												self.DATA.transition_type = parseInt(value, 16)
+												self.logVerbose('Received Transition Type: ' + value)
+											} else {
+												self.log('warn', `DTH:001800 — unexpected value "${value}", ignored`)
+											}
+										} else if (param3 === '01') {
+											self.DATA.mix_type = parseInt(value, 16)
+											self.logVerbose('Received Mix Type: ' + value)
+										} else if (param3 === '02') {
+											self.DATA.wipe_type = parseInt(value, 16)
+											self.logVerbose('Received Wipe Type: ' + value)
+										} else if (param3 === '03') {
+											self.DATA.wipe_direction = parseInt(value, 16)
+											self.logVerbose('Received Wipe Direction: ' + value)
+										}
 									}
 
 									if (param1 == '00' && param2 == '00' && param3 == '0A') {

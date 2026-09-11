@@ -502,6 +502,82 @@ module.exports = {
 			},
 		}
 
+		feedbacks.transition_type = {
+			type: 'boolean',
+			name: 'Transition Type Active',
+			description: 'True when the selected transition type (Mix or Wipe) is active',
+			defaultStyle: { bgcolor: combineRgb(0, 80, 160) },
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Transition Type',
+					id: 'type',
+					default: 0,
+					choices: self.CHOICES_TRANSITION_TYPES,
+				},
+			],
+			callback: function (feedback) {
+				return self.DATA.transition_type === feedback.options.type
+			},
+		}
+
+		feedbacks.mix_type = {
+			type: 'boolean',
+			name: 'Mix Type Active',
+			description: 'True when the selected mix type is active',
+			defaultStyle: { bgcolor: combineRgb(0, 80, 160) },
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Mix Type',
+					id: 'type',
+					default: 0,
+					choices: self.CHOICES_MIX_TYPES,
+				},
+			],
+			callback: function (feedback) {
+				return self.DATA.mix_type === feedback.options.type
+			},
+		}
+
+		feedbacks.wipe_type = {
+			type: 'boolean',
+			name: 'Wipe Type Active',
+			description: 'True when the selected wipe type is active',
+			defaultStyle: { bgcolor: combineRgb(0, 80, 160) },
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Wipe Type',
+					id: 'type',
+					default: 0,
+					choices: self.CHOICES_WIPE_TYPES,
+				},
+			],
+			callback: function (feedback) {
+				return self.DATA.wipe_type === feedback.options.type
+			},
+		}
+
+		feedbacks.wipe_direction = {
+			type: 'boolean',
+			name: 'Wipe Direction Active',
+			description: 'True when the selected wipe direction is active',
+			defaultStyle: { bgcolor: combineRgb(0, 80, 160) },
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Wipe Direction',
+					id: 'direction',
+					default: 0,
+					choices: self.CHOICES_WIPE_DIRECTIONS,
+				},
+			],
+			callback: function (feedback) {
+				return self.DATA.wipe_direction === feedback.options.direction
+			},
+		}
+
 		self.setFeedbackDefinitions(feedbacks)
 	},
 }

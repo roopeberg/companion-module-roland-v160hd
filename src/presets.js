@@ -746,7 +746,7 @@ module.exports = {
 				type: 'layered',
 				elements: layeredBtn(t.label, TRANS_DIM),
 				steps: [{ down: [{ actionId: 'set_transition_type', options: { type: t.id } }], up: [] }],
-				feedbacks: [],
+				feedbacks: [{ feedbackId: 'transition_type', options: { type: t.id }, styleOverrides: bgOverride(TRANS_COLOR) }],
 			}
 			transTypeIds.push(id)
 		}
@@ -760,7 +760,7 @@ module.exports = {
 				type: 'layered',
 				elements: layeredBtn(`Mix\n${t.label}`, TRANS_DIM),
 				steps: [{ down: [{ actionId: 'set_mix_type', options: { type: t.id } }], up: [] }],
-				feedbacks: [],
+				feedbacks: [{ feedbackId: 'mix_type', options: { type: t.id }, styleOverrides: bgOverride(TRANS_COLOR) }],
 			}
 			mixTypeIds.push(id)
 		}
@@ -774,7 +774,7 @@ module.exports = {
 				type: 'layered',
 				elements: layeredBtn(`Wipe\n${t.label}`, TRANS_DIM),
 				steps: [{ down: [{ actionId: 'set_wipe_type', options: { type: t.id } }], up: [] }],
-				feedbacks: [],
+				feedbacks: [{ feedbackId: 'wipe_type', options: { type: t.id }, styleOverrides: bgOverride(TRANS_COLOR) }],
 			}
 			wipeTypeIds.push(id)
 		}
@@ -786,9 +786,9 @@ module.exports = {
 			presets[id] = {
 				name: `Wipe Direction: ${d.label}`,
 				type: 'layered',
-				elements: layeredBtn(`Wipe\n${d.label}`, TRANS_COLOR),
+				elements: layeredBtn(`Wipe\n${d.label}`, TRANS_DIM),
 				steps: [{ down: [{ actionId: 'set_wipe_direction', options: { direction: d.id } }], up: [] }],
-				feedbacks: [],
+				feedbacks: [{ feedbackId: 'wipe_direction', options: { direction: d.id }, styleOverrides: bgOverride(TRANS_COLOR) }],
 			}
 			wipeDirIds.push(id)
 		}

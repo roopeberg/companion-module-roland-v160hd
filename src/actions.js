@@ -1424,10 +1424,9 @@ module.exports = {
 			],
 			callback: function (action, _bank) {
 				let options = action.options
-				let address = '00' + '18' + '00'
-
-				let value = options.type.toString(16).padStart(2, '0').toUpperCase()
-				self.sendCommand(address, value)
+				self.DATA.transition_type = options.type
+				self.sendCommand('001800', options.type.toString(16).padStart(2, '0').toUpperCase())
+				self.getTransitionData()
 			},
 		}
 
@@ -1444,10 +1443,9 @@ module.exports = {
 			],
 			callback: function (action, _bank) {
 				let options = action.options
-				let address = '00' + '18' + '01'
-
-				let value = options.type.toString(16).padStart(2, '0').toUpperCase()
-				self.sendCommand(address, value)
+				self.DATA.mix_type = options.type
+				self.sendCommand('001801', options.type.toString(16).padStart(2, '0').toUpperCase())
+				self.getTransitionData()
 			},
 		}
 
@@ -1464,10 +1462,9 @@ module.exports = {
 			],
 			callback: function (action, _bank) {
 				let options = action.options
-				let address = '00' + '18' + '02'
-
-				let value = options.type.toString(16).padStart(2, '0').toUpperCase()
-				self.sendCommand(address, value)
+				self.DATA.wipe_type = options.type
+				self.sendCommand('001802', options.type.toString(16).padStart(2, '0').toUpperCase())
+				self.getTransitionData()
 			},
 		}
 
@@ -1484,10 +1481,9 @@ module.exports = {
 			],
 			callback: function (action, _bank) {
 				let options = action.options
-				let address = '00' + '18' + '03'
-
-				let value = options.direction.toString(16).padStart(2, '0').toUpperCase()
-				self.sendCommand(address, value)
+				self.DATA.wipe_direction = options.direction
+				self.sendCommand('001803', options.direction.toString(16).padStart(2, '0').toUpperCase())
+				self.getTransitionData()
 			},
 		}
 

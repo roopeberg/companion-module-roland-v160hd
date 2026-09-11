@@ -52,6 +52,11 @@ module.exports = {
 		variables.aux2link = { name: 'Aux 2 Link' }
 		variables.aux3link = { name: 'Aux 3 Link' }
 
+		variables.transition_type = { name: 'Transition Type (Mix/Wipe)' }
+		variables.mix_type = { name: 'Mix Type' }
+		variables.wipe_type = { name: 'Wipe Type' }
+		variables.wipe_direction = { name: 'Wipe Direction' }
+
 		variables.freeze = { name: 'Freeze On/Off' }
 		variables.freeze_type = { name: 'Freeze Type (All/Select)' }
 		variables.freeze_select_mode = { name: 'Freeze Select Mode Active' }
@@ -254,6 +259,16 @@ module.exports = {
 			variableObj.aux1link = self.DATA.aux1link == '01' ? 'On' : 'Off'
 			variableObj.aux2link = self.DATA.aux2link == '01' ? 'On' : 'Off'
 			variableObj.aux3link = self.DATA.aux3link == '01' ? 'On' : 'Off'
+
+			//Transition
+			const TRANS_TYPE_LABELS = ['Mix', 'Wipe']
+			const MIX_TYPE_LABELS = ['Mix', 'Fam', 'Nam']
+			const WIPE_TYPE_LABELS = ['Horizontal', 'Vertical', 'Upper Left', 'Upper Right', 'Lower Left', 'Lower Right', 'H-Center', 'V-Center']
+			const WIPE_DIR_LABELS = ['Normal', 'Reverse', 'Round Trip']
+			variableObj.transition_type = TRANS_TYPE_LABELS[self.DATA.transition_type] ?? '-'
+			variableObj.mix_type = MIX_TYPE_LABELS[self.DATA.mix_type] ?? '-'
+			variableObj.wipe_type = WIPE_TYPE_LABELS[self.DATA.wipe_type] ?? '-'
+			variableObj.wipe_direction = WIPE_DIR_LABELS[self.DATA.wipe_direction] ?? '-'
 
 			//Freeze
 			variableObj.freeze = self.DATA.freeze == '01' ? 'On' : 'Off'

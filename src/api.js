@@ -196,14 +196,11 @@ module.exports = {
 	getPinpKeyTally: function () {
 		let self = this
 
-		self.sendRawCommand('RQH:001B00,000001;') //PnP/Key 1 on PGM
-		self.sendRawCommand('RQH:001B01,000001;') //PnP/Key 1 on PVW
-		self.sendRawCommand('RQH:001C00,000001;') //PnP/Key 2 on PGM
-		self.sendRawCommand('RQH:001C01,000001;') //PnP/Key 2 on PVW
-		self.sendRawCommand('RQH:001D00,000001;') //PnP/Key 3 on PGM
-		self.sendRawCommand('RQH:001D01,000001;') //PnP/Key 3 on PVW
-		self.sendRawCommand('RQH:001E00,000001;') //PnP/Key 4 on PGM
-		self.sendRawCommand('RQH:001E01,000001;') //PnP/Key 4 on PVW
+		// PGM+PVW tally for each PiP/Key — xx00 and xx01 are consecutive (2 bytes each).
+		self.sendRawCommand('RQH:001B00,000002;') //PnP/Key 1 PGM+PVW tally
+		self.sendRawCommand('RQH:001C00,000002;') //PnP/Key 2 PGM+PVW tally
+		self.sendRawCommand('RQH:001D00,000002;') //PnP/Key 3 PGM+PVW tally
+		self.sendRawCommand('RQH:001E00,000002;') //PnP/Key 4 PGM+PVW tally
 	},
 
 	getPinpKeySource: function () {
@@ -221,7 +218,7 @@ module.exports = {
 		self.pipSourceDataLoaded = false
 	},
 
-	getAuxData: function () {
+	getAuxSources: function () {
 		let self = this
 
 		// PGM + PVW are consecutive: 002100–002101 (2 bytes).
@@ -229,10 +226,20 @@ module.exports = {
 		self.sendRawCommand('RQH:000011,000001;') //Aux 1 current source (not contiguous with others)
 		// Aux 2 + Aux 3 source are consecutive: 00002E–00002F (2 bytes).
 		self.sendRawCommand('RQH:00002E,000002;')
+	},
+
+	getAuxMutes: function () {
+		let self = this
 
 		self.sendRawCommand('RQH:012203,000001;') //Aux 1 mute
 		self.sendRawCommand('RQH:012503,000001;') //Aux 2 mute
 		self.sendRawCommand('RQH:012603,000001;') //Aux 3 mute
+	},
+
+	getAuxData: function () {
+		let self = this
+		self.getAuxSources()
+		self.getAuxMutes()
 	},
 
 	getFreezeData: function () {
@@ -311,10 +318,8 @@ module.exports = {
 		}
 		const i = self.memoryNameIndex
 		const hexMemory = i.toString(16).padStart(2, '0').toUpperCase()
-		for (let j = 0; j < 8; j++) {
-			const hex = j.toString(16).padStart(2, '0').toUpperCase()
-			self.sendRawCommand('RQH:60' + hexMemory + hex + ',000001;')
-		}
+		// Read all 8 name characters for this slot in one query (60xx00–60xx07).
+		self.sendRawCommand('RQH:60' + hexMemory + '00,000008;')
 		self.memoryNameIndex = (i + 1) % 30
 		// All 30 slots requested — stop until next save resets the flag
 		if (self.memoryNameIndex === 0) {
@@ -402,10 +407,10 @@ module.exports = {
 											self.updateTally(input, tallyState)
 											index = index + 2
 										}
-										// Re-poll actual bus sources immediately so DATA.pgm_source etc.
-										// reflect the hardware-panel change within one TCP round-trip
-										// instead of waiting for the next regular poll interval.
-										self.getAuxData()
+										// Re-poll bus sources immediately so DATA.pgm_source etc. reflect
+										// the hardware-panel change within one TCP round-trip.
+										// Mutes do not change on source switches — skip getAuxMutes here.
+										self.getAuxSources()
 									}
 
 									if (param1 == '00') {
@@ -502,6 +507,22 @@ module.exports = {
 											if (lookup) {
 												self.DATA.pnpkey4sourcename = lookup.label
 												self.logVerbose('PnP/Key 4 Source Name: ' + lookup.label)
+											}
+										} else if (
+											['1B', '1C', '1D', '1E'].includes(param2) &&
+											param3 == '00'
+										) {
+											// PiP/Key PGM+PVW tally pair — xx00 (PGM) and xx01 (PVW).
+											const tallies = self._parseHexBlock(value, 2)
+											if (tallies) {
+												self.DATA[`data_${param2}00`] = tallies[0]
+												self.DATA[`data_${param2}01`] = tallies[1]
+												self.logVerbose(`Received PiP ${param2} tally block: ${value}`)
+											} else if (self._parseHexBlock(value, 1)) {
+												self.DATA[`data_${param2}00`] = value
+												self.logVerbose(`Received PiP ${param2} PGM tally: ${value}`)
+											} else {
+												self.log('warn', `DTH:00${param2}00 — unexpected value "${value}", ignored`)
 											}
 										} else {
 											//other data
@@ -645,24 +666,29 @@ module.exports = {
 									}
 
 									if (param1 == '60') {
-										//memory names — 8 chars, each arrives as a separate message
-										//value is a 1-byte hex string (e.g. "41" = 'A')
-										let memoryNumber = parseInt(param2, 16)
-										let memoryCharIndex = parseInt(param3, 16)
-										let char = String.fromCharCode(parseInt(value, 16))
-
-										let memoryName = self.DATA[`memory${memoryNumber}`] || '        '
-										if (memoryName.length < 8) {
-											memoryName = memoryName.padEnd(8, ' ')
+										const memoryNumber = parseInt(param2, 16)
+										const nameBlock = param3 === '00' ? self._parseHexBlock(value, 8) : null
+										if (nameBlock) {
+											// Multi-byte: RQH:60xx00,000008 — all 8 name chars in one shot.
+											const memoryName = nameBlock.map((b) => String.fromCharCode(parseInt(b, 16))).join('')
+											self.DATA[`memory${memoryNumber}`] = memoryName
+											self.setVariableValues({ [`memoryname_${memoryNumber + 1}`]: memoryName.trimEnd() })
+											self.logVerbose(`Received memory ${memoryNumber + 1} name block: "${memoryName.trimEnd()}"`)
+										} else if (self._parseHexBlock(value, 1)) {
+											// Single-byte: individual char (legacy path, kept for safety).
+											const memoryCharIndex = parseInt(param3, 16)
+											const char = String.fromCharCode(parseInt(value, 16))
+											let memoryName = self.DATA[`memory${memoryNumber}`] || '        '
+											if (memoryName.length < 8) memoryName = memoryName.padEnd(8, ' ')
+											memoryName =
+												memoryName.substring(0, memoryCharIndex) +
+												char +
+												memoryName.substring(memoryCharIndex + 1)
+											self.DATA[`memory${memoryNumber}`] = memoryName
+											self.setVariableValues({ [`memoryname_${memoryNumber + 1}`]: memoryName.trimEnd() })
+										} else {
+											self.log('warn', `DTH:60${param2}${param3} — unexpected value "${value}", ignored`)
 										}
-
-										memoryName =
-											memoryName.substring(0, memoryCharIndex) + char + memoryName.substring(memoryCharIndex + 1)
-
-										self.DATA[`memory${memoryNumber}`] = memoryName
-										let variableObj = {}
-										variableObj[`memoryname_${memoryNumber + 1}`] = memoryName.trimEnd()
-										self.setVariableValues(variableObj)
 									}
 
 									if (param1 == '0A') {

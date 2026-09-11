@@ -57,6 +57,8 @@ The Roland TCP protocol supports reading *N* consecutive bytes in a single `RQH:
 | PGM + PVW source | 2 | 1 |
 | Aux 2 + Aux 3 source | 2 | 1 |
 | Aux 1–3 link on/off | 3 | 1 |
+| PiP/Key 1–4 PGM+PVW tally (per key) | 2 | 1 |
+| Memory slot name (8 chars per slot) | 8 | 1 |
 
 ### Startup-once vs. continuous polling
 
@@ -70,8 +72,10 @@ Data that changes only on explicit user action is read once at connect and then 
 
 | | Original module | This module |
 |---|---|---|
-| Queries per poll cycle | **271** (dominated by 240 memory-name reads) | **18** |
-| Freeze registers read | 1 (on/off only) | 18 (all select states) |
+| Queries per poll cycle (steady-state) | **271** (dominated by 240 memory-name reads/cycle) | **14** |
+| Startup memory-name load | 240 queries | 30 queries (one 8-byte read per slot) |
+| Tally-triggered source re-poll | 6 queries (sources + mutes) | 3 queries (sources only) |
+| Freeze registers read | 1 (on/off only) | 18 (all select states, startup-once) |
 | PGM/PVW tracked | No | Yes |
 | User commands blocked by poll | Yes | Never — priority queue |
 

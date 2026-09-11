@@ -713,16 +713,23 @@ module.exports = {
 
 		self._drainScheduled = false
 
-		// Always flush all high-priority (write) commands before any low-priority reads.
-		while (self._highQueue.length > 0) {
+		// Send up to BATCH commands: high-priority first, then low-priority to fill
+		// the remaining slots. This rate-limits both queues equally while ensuring
+		// writes always precede reads within every batch.
+		const BATCH = 4
+		let sent = 0
+
+		while (sent < BATCH && self._highQueue.length > 0) {
 			self._sendDirect(self._highQueue.shift())
+			sent++
 		}
 
-		// Send a small batch of low-priority reads; real delay before next batch
-		// lets the device breathe and keeps high-priority commands responsive.
-		const BATCH = 4
-		for (let i = 0; i < BATCH && self._lowQueue.length > 0; i++) {
-			self._sendDirect(self._lowQueue.shift())
+		// Fill remaining batch slots with low-priority only when no writes are waiting.
+		if (self._highQueue.length === 0) {
+			while (sent < BATCH && self._lowQueue.length > 0) {
+				self._sendDirect(self._lowQueue.shift())
+				sent++
+			}
 		}
 
 		if (self._highQueue.length > 0 || self._lowQueue.length > 0) {

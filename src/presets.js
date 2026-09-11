@@ -138,6 +138,23 @@ module.exports = {
 					styleOverrides: dotOverride(b.elementId, b.color),
 				}))
 		}
+		// PGM source button with full-background PGM tally + AUX squares in bottom third.
+		// Each AUX square is 1/3 button width × 1/3 button height; number (1/2/3) appears
+		// on top of the square in WHITE when that AUX bus has this source — invisible (DARK)
+		// otherwise so the button stays clean. Squares layer over the PGM red background.
+		function pgmMultiAuxBtn(sourceLabel) {
+			return [
+				{ type: 'box', id: 'bg', x: 0, y: 0, width: 100, height: 100, color: DARK },
+				{ type: 'text', id: 'label', x: 3, y: 3, width: 94, height: 61, text: sourceLabel, fontsize: FONT_SIZE, fontsizeAllowShrink: true, color: WHITE, halign: 'center', valign: 'center' },
+				{ type: 'box', id: 'dot_aux1', x: 0, y: 67, width: 33, height: 33, color: DARK },
+				{ type: 'box', id: 'dot_aux2', x: 33, y: 67, width: 34, height: 33, color: DARK },
+				{ type: 'box', id: 'dot_aux3', x: 67, y: 67, width: 33, height: 33, color: DARK },
+				{ type: 'text', id: 'num1', x: 0, y: 67, width: 33, height: 33, text: '1', fontsize: 22, fontsizeAllowShrink: false, color: DARK, halign: 'center', valign: 'center' },
+				{ type: 'text', id: 'num2', x: 33, y: 67, width: 34, height: 33, text: '2', fontsize: 22, fontsizeAllowShrink: false, color: DARK, halign: 'center', valign: 'center' },
+				{ type: 'text', id: 'num3', x: 67, y: 67, width: 33, height: 33, text: '3', fontsize: 22, fontsizeAllowShrink: false, color: DARK, halign: 'center', valign: 'center' },
+			]
+		}
+
 		const sourceGroups = [
 			{ name: 'HDMI', sources: HDMI_SOURCES },
 			{ name: 'SDI', sources: SDI_SOURCES },
@@ -208,6 +225,55 @@ module.exports = {
 				}
 				addSection(sectionId, `${aux.label} - ${group.name}`, sectionIds)
 			}
+		}
+
+		// PGM Multi-AUX source buttons — alternate PGM layout with AUX squares in bottom third.
+		// Exists alongside the standard PGM buttons so operators can choose which style to use.
+		for (const group of sourceGroups) {
+			const sectionId = `pgm_aux_${group.name.toLowerCase()}`
+			const sectionIds = []
+			for (const src of group.sources) {
+				const id = `${sectionId}_${src.pgmpvw_id}`
+				presets[id] = {
+					name: `PGM+AUX: ${src.label}`,
+					type: 'layered',
+					elements: pgmMultiAuxBtn(src.label),
+					steps: [{ down: [{ actionId: 'select_pgm', options: { input: src.pgmpvw_id } }], up: [] }],
+					feedbacks: [
+						{
+							feedbackId: 'bus_tally',
+							options: { bus: 'pgm', source: src.pgmpvw_id },
+							styleOverrides: bgOverride(RED),
+						},
+						{
+							feedbackId: 'bus_tally',
+							options: { bus: 'aux1', source: src.pgmpvw_id },
+							styleOverrides: [
+								...dotOverride('dot_aux1', AMBER),
+								{ elementId: 'num1', elementProperty: 'color', override: { isExpression: false, value: WHITE } },
+							],
+						},
+						{
+							feedbackId: 'bus_tally',
+							options: { bus: 'aux2', source: src.pgmpvw_id },
+							styleOverrides: [
+								...dotOverride('dot_aux2', CYAN_AUX),
+								{ elementId: 'num2', elementProperty: 'color', override: { isExpression: false, value: WHITE } },
+							],
+						},
+						{
+							feedbackId: 'bus_tally',
+							options: { bus: 'aux3', source: src.pgmpvw_id },
+							styleOverrides: [
+								...dotOverride('dot_aux3', VIOLET),
+								{ elementId: 'num3', elementProperty: 'color', override: { isExpression: false, value: WHITE } },
+							],
+						},
+					],
+				}
+				sectionIds.push(id)
+			}
+			addSection(sectionId, `PGM+AUX — ${group.name}`, sectionIds)
 		}
 
 		// PiP channel definitions

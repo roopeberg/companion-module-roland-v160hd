@@ -593,6 +593,111 @@ module.exports = {
 			addSection(sectionId, `Freeze Select — ${group.name}`, sectionIds)
 		}
 
+		// ── Memory slots ────────────────────────────────────────────────────────
+
+		const MEM_DIM = combineRgb(20, 20, 50)
+		const MEM_ACTIVE = combineRgb(180, 80, 0)
+		const MEM_SAVE = combineRgb(60, 120, 0)
+
+		const loadIds = []
+		const saveIds = []
+
+		for (let slot = 1; slot <= 30; slot++) {
+			const memId = slot - 1 // 0-indexed for action + feedback
+			const nameVar = `$(roland-v160hd:memoryname_${slot})`
+
+			const loadId = `memory_load_${slot}`
+			presets[loadId] = {
+				name: `Load Memory ${slot}`,
+				type: 'layered',
+				elements: [
+					{
+						type: 'box',
+						id: 'bg',
+						x: 0, y: 0, width: 100, height: 100,
+						color: MEM_DIM,
+					},
+					{
+						type: 'text',
+						id: 'num',
+						x: 0, y: 0, width: 30, height: 30,
+						text: String(slot),
+						fontsize: 18,
+						fontsizeAllowShrink: false,
+						color: WHITE,
+						halign: 'left',
+						valign: 'top',
+					},
+					{
+						type: 'text',
+						id: 'label',
+						x: 0, y: 30, width: 100, height: 70,
+						text: nameVar,
+						fontsize: FONT_SIZE,
+						fontsizeAllowShrink: true,
+						color: WHITE,
+						halign: 'center',
+						valign: 'center',
+					},
+				],
+				steps: [
+					{ down: [{ actionId: 'load_memory_trigger', options: { memory: memId } }], up: [] },
+				],
+				feedbacks: [
+					{
+						feedbackId: 'memory_active',
+						options: { slot },
+						styleOverrides: bgOverride(MEM_ACTIVE),
+					},
+				],
+			}
+			loadIds.push(loadId)
+
+			const saveId = `memory_save_${slot}`
+			presets[saveId] = {
+				name: `Save Memory ${slot}`,
+				type: 'layered',
+				elements: [
+					{
+						type: 'box',
+						id: 'bg',
+						x: 0, y: 0, width: 100, height: 100,
+						color: MEM_DIM,
+					},
+					{
+						type: 'text',
+						id: 'num',
+						x: 0, y: 0, width: 30, height: 30,
+						text: String(slot),
+						fontsize: 18,
+						fontsizeAllowShrink: false,
+						color: WHITE,
+						halign: 'left',
+						valign: 'top',
+					},
+					{
+						type: 'text',
+						id: 'label',
+						x: 0, y: 30, width: 100, height: 70,
+						text: nameVar,
+						fontsize: FONT_SIZE,
+						fontsizeAllowShrink: true,
+						color: WHITE,
+						halign: 'center',
+						valign: 'center',
+					},
+				],
+				steps: [
+					{ down: [{ actionId: 'save_memory_trigger', options: { memory: memId } }], up: [] },
+				],
+				feedbacks: [],
+			}
+			saveIds.push(saveId)
+		}
+
+		addSection('memory_load', 'Memory Load', loadIds)
+		addSection('memory_save', 'Memory Save', saveIds)
+
 		self.setPresetDefinitions(structure, presets)
 	},
 }

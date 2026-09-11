@@ -478,6 +478,30 @@ module.exports = {
 			},
 		}
 
+		feedbacks.memory_active = {
+			type: 'boolean',
+			name: 'Memory Slot: Last Loaded',
+			description: 'True when this memory slot was the last one loaded',
+			style: {
+				color: foregroundColor,
+				bgcolor: combineRgb(180, 80, 0),
+			},
+			options: [
+				{
+					type: 'number',
+					label: 'Memory slot (1–30)',
+					id: 'slot',
+					default: 1,
+					min: 1,
+					max: 30,
+				},
+			],
+			callback: function (feedback, _bank) {
+				// DATA.lastMemory is 0-indexed; slot option is 1-indexed
+				return self.DATA.lastMemory === feedback.options.slot - 1
+			},
+		}
+
 		self.setFeedbackDefinitions(feedbacks)
 	},
 }

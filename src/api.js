@@ -170,8 +170,11 @@ module.exports = {
 		self.getFreezeData()
 		self.getOutputData()
 		self.getAuxLinkData()
-		self.getNextMemoryName()
-		self.getLastMemoryLoaded()
+		// Memory names: cycle through all 30 slots once at startup, then stop.
+		// Restarted by save_memory_trigger so a renamed slot is picked up.
+		if (!self.memoryNamesLoaded) {
+			self.getNextMemoryName()
+		}
 	},
 
 	getPinpKeyData: function () {
@@ -291,6 +294,16 @@ module.exports = {
 			self.sendRawCommand('RQH:60' + hexMemory + hex + ',000001;')
 		}
 		self.memoryNameIndex = (i + 1) % 30
+		// All 30 slots requested — stop until next save resets the flag
+		if (self.memoryNameIndex === 0) {
+			self.memoryNamesLoaded = true
+		}
+	},
+
+	refreshMemoryNames: function () {
+		let self = this
+		self.memoryNameIndex = 0
+		self.memoryNamesLoaded = false
 	},
 
 	getLastMemoryLoaded: function () {

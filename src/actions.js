@@ -1731,6 +1731,7 @@ module.exports = {
 				let address = '0A' + '00' + '00'
 				let value = options.memory.toString(16).padStart(2, '0').toUpperCase()
 				self.sendCommand(address, value)
+				self.getLastMemoryLoaded()
 			},
 		}
 
@@ -1750,6 +1751,8 @@ module.exports = {
 				let address = '0A' + '00' + '01'
 				let value = options.memory.toString(16).padStart(2, '0').toUpperCase()
 				self.sendCommand(address, value)
+				// Re-read all memory names so a renamed slot is picked up
+				self.refreshMemoryNames()
 			},
 		}
 

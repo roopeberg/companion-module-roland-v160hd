@@ -10,16 +10,17 @@ Bitfocus Companion module for the **Roland V-160HD** HD video switcher.
 
 ## Features
 
-- PGM / PVW / AUX 1–3 source selection with per-bus tally feedback
-- PiP & Key (1–4): source, type, shape, border, position, size, crop, zoom, level
-- DSK (1–2): key/fill source, type, level, gain, mix level
-- Capture / Apply / Snapshot workflow for PiP and DSK settings (files saved to `~/v160hd-snapshots/`)
-- Memory recall (1–30) with name variables
-- Freeze switch control
-- AUX mute / link
-- PTZ camera control (pan, tilt, zoom, focus, exposure, tally)
-- Output / input assignment
-- Transition type / mix / wipe control
+- **PGM / PVW / AUX 1–3** source selection with per-bus tally feedback (each bus tracked independently)
+- **PiP & Key (1–4):** source, type, shape, border, position, size, crop, zoom, level
+- **DSK (1–2):** key/fill source, type, level, gain, mix level
+- **Freeze:** global on/off, freeze type (All / Select), and per-input freeze select for HDMI 1–8 and SDI 1–8
+- **Capture / Apply / Snapshot** workflow — save and restore complete PiP and DSK configurations to `~/v160hd-snapshots/`
+- **Memory** recall (slots 1–30) with slot name variables; preset buttons auto-labelled with slot names
+- **AUX mute / link**
+- **PTZ camera control** — pan, tilt, zoom, focus, exposure, tally
+- **Output / input assignment**
+- **Transition** type, mix, and wipe control
+- **Optimistic updates** — tally, freeze, and source state reflected immediately on button press without waiting for the next poll
 
 ## Configuration
 
@@ -73,6 +74,37 @@ Data that changes only on explicit user action is read once at connect and then 
 | Freeze registers read | 1 (on/off only) | 18 (all select states) |
 | PGM/PVW tracked | No | Yes |
 | User commands blocked by poll | Yes | Never — priority queue |
+
+## Improvements over upstream
+
+This fork extends and fixes the [original Bitfocus module](https://github.com/bitfocus/companion-module-roland-v160hd).
+
+### New features
+
+| Feature | Details |
+|---|---|
+| Per-bus tally | PGM, PVW, and AUX 1–3 each have independent tally feedback. The original had no PGM/PVW tracking. |
+| Full freeze select | Control and monitor per-input freeze state for all 18 inputs (HDMI 1–8, SDI 1–8). Original only exposed global freeze on/off. |
+| Capture / Apply / Snapshot | Save and restore complete PiP 1–4 and DSK 1–2 configurations as JSON snapshots on disk. |
+| Memory presets | Preset buttons auto-labelled with slot names polled from the device. |
+| Optimistic updates | Button-press state reflected immediately in feedbacks; no waiting for the next poll cycle. |
+| Priority command queue | User actions always sent before polling reads; Roland 20 ms rate limit enforced automatically. |
+| Companion 5 API v2 | Full compatibility with `@companion-module/base` 2.x (presets, feedbacks, variables, upgrade scripts). |
+
+### Bug fixes
+
+| Fix | Impact |
+|---|---|
+| TCP parser rewritten | Incoming data was processed character-by-character with fragile `indexOf` logic; messages split across TCP chunks were silently lost. Replaced with a proper streaming buffer that handles all delimiter types (`;\n`, `\n`, auth prompts) in occurrence order. |
+| Auth prompt handling | Module stalled when the `Enter password:` prompt arrived without a trailing newline — common on first connect. |
+| Password not logged | Original code logged the plaintext password to the Companion debug console. |
+| Memory name decoding | Hex bytes in memory name responses were concatenated as strings instead of being decoded to characters, producing garbage variable values. |
+| Poll interval leak | Starting a new poll interval without clearing the old one caused duplicate poll loops after reconnect. |
+| `bus_tally` source resolution | INPUT slot IDs were not resolved to their physical source, causing wrong tally colours when inputs were assigned to slots. |
+| Socket reconnect race | Destroying the socket and immediately recreating it could result in two live connections. Reconnect now delegated to `TCPHelper` built-in retry. |
+| Polling rate clamping | Original accepted any value; module now clamps to 300–30 000 ms and warns when the configured value is adjusted. |
+| PiP position range | H/V position range corrected to −100…+100 % per the Roland Control Guide; original used wrong bounds. |
+| PiP / DSK RQH byte count | `capturePinp` and `captureDsk` used incorrect byte counts for 2-byte parameters, causing garbled snapshot data. |
 
 ## Documentation
 

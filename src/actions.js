@@ -1858,6 +1858,89 @@ module.exports = {
 			},
 		}
 
+		actions.freezeSelectModeEnable = {
+			name: 'Freeze Select Mode: Enable',
+			description: 'Activates the Set Freeze modifier — PVW/Freeze dual-function buttons now toggle freeze select',
+			options: [],
+			callback: function (_action, _bank) {
+				self.freeze_select_mode = true
+				self.checkFeedbacks('freeze_select_mode_active')
+				self.setVariableValues({ freeze_select_mode: 'Active' })
+			},
+		}
+
+		actions.freezeSelectModeDisable = {
+			name: 'Freeze Select Mode: Disable',
+			description: 'Deactivates the Set Freeze modifier',
+			options: [],
+			callback: function (_action, _bank) {
+				self.freeze_select_mode = false
+				self.checkFeedbacks('freeze_select_mode_active')
+				self.setVariableValues({ freeze_select_mode: 'Off' })
+			},
+		}
+
+		const FREEZE_SELECT_INPUTS = [
+			{ id: '02', label: 'HDMI IN 1' },
+			{ id: '03', label: 'HDMI IN 2' },
+			{ id: '04', label: 'HDMI IN 3' },
+			{ id: '05', label: 'HDMI IN 4' },
+			{ id: '06', label: 'HDMI IN 5' },
+			{ id: '07', label: 'HDMI IN 6' },
+			{ id: '08', label: 'HDMI IN 7' },
+			{ id: '09', label: 'HDMI IN 8' },
+			{ id: '0A', label: 'SDI IN 1' },
+			{ id: '0B', label: 'SDI IN 2' },
+			{ id: '0C', label: 'SDI IN 3' },
+			{ id: '0D', label: 'SDI IN 4' },
+			{ id: '0E', label: 'SDI IN 5' },
+			{ id: '0F', label: 'SDI IN 6' },
+			{ id: '10', label: 'SDI IN 7' },
+			{ id: '11', label: 'SDI IN 8' },
+		]
+
+		// Physical HDMI/SDI source IDs used by PVW select and freeze select presets
+		const PVW_PHYSICAL_SOURCES = [
+			...Array.from({ length: 8 }, (_, i) => ({ id: i.toString(16).padStart(2, '0').toUpperCase(), label: `HDMI ${i + 1}` })),
+			...Array.from({ length: 8 }, (_, i) => ({ id: (8 + i).toString(16).padStart(2, '0').toUpperCase(), label: `SDI ${i + 1}` })),
+		]
+
+		actions.pvwOrFreezeToggle = {
+			name: 'PVW Select / Freeze Toggle (dual-function)',
+			description: 'Selects PVW source normally; when Freeze Select Mode is active, toggles freeze select for the input instead',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'PVW source (physical HDMI/SDI)',
+					id: 'input',
+					default: '00',
+					choices: PVW_PHYSICAL_SOURCES,
+				},
+				{
+					type: 'dropdown',
+					label: 'Freeze Select address (physical HDMI/SDI input)',
+					id: 'freeze_addr',
+					default: '02',
+					choices: FREEZE_SELECT_INPUTS,
+				},
+			],
+			callback: function (action, _bank) {
+				let options = action.options
+				if (self.freeze_select_mode) {
+					const addrKey = options.freeze_addr
+					const current = self.DATA[`freeze_select_${addrKey}`]
+					const newVal = current == '01' ? '00' : '01'
+					self.sendCommand(`0205${addrKey}`, newVal)
+					self.DATA[`freeze_select_${addrKey}`] = newVal
+					self.checkFeedbacks('freeze_input_selected')
+					self.updateVariables()
+				} else {
+					self.sendCommand('002101', options.input)
+					self.getAuxData()
+				}
+			},
+		}
+
 		//Camera Control
 
 		actions.selectCamera = {

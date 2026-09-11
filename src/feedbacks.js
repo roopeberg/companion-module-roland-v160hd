@@ -7,6 +7,7 @@ module.exports = {
 
 		const foregroundColor = combineRgb(255, 255, 255) // White
 		const backgroundColorRed = combineRgb(255, 0, 0) // Red
+		const backgroundColorCyan = combineRgb(0, 180, 200) // Cyan — freeze select indicator
 
 		feedbacks.auxMute = {
 			type: 'boolean',
@@ -302,6 +303,73 @@ module.exports = {
 				}
 
 				return false
+			},
+		}
+
+		feedbacks.freeze_type_select = {
+			type: 'boolean',
+			name: 'Freeze Type: Select',
+			description: 'True when Freeze Type is set to Select (not All)',
+			style: {
+				color: foregroundColor,
+				bgcolor: backgroundColorCyan,
+			},
+			options: [],
+			callback: function (_feedback, _bank) {
+				return self.DATA.freeze_type == '01'
+			},
+		}
+
+		feedbacks.freeze_input_selected = {
+			type: 'boolean',
+			name: 'Freeze Select: Input Active',
+			description: 'True when the chosen input is enabled in Freeze Select mode',
+			style: {
+				color: foregroundColor,
+				bgcolor: backgroundColorCyan,
+			},
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Input',
+					id: 'input',
+					default: '02',
+					choices: [
+						{ id: '02', label: 'HDMI IN 1' },
+						{ id: '03', label: 'HDMI IN 2' },
+						{ id: '04', label: 'HDMI IN 3' },
+						{ id: '05', label: 'HDMI IN 4' },
+						{ id: '06', label: 'HDMI IN 5' },
+						{ id: '07', label: 'HDMI IN 6' },
+						{ id: '08', label: 'HDMI IN 7' },
+						{ id: '09', label: 'HDMI IN 8' },
+						{ id: '0A', label: 'SDI IN 1' },
+						{ id: '0B', label: 'SDI IN 2' },
+						{ id: '0C', label: 'SDI IN 3' },
+						{ id: '0D', label: 'SDI IN 4' },
+						{ id: '0E', label: 'SDI IN 5' },
+						{ id: '0F', label: 'SDI IN 6' },
+						{ id: '10', label: 'SDI IN 7' },
+						{ id: '11', label: 'SDI IN 8' },
+					],
+				},
+			],
+			callback: function (feedback, _bank) {
+				return self.DATA[`freeze_select_${feedback.options.input}`] == '01'
+			},
+		}
+
+		feedbacks.freeze_select_mode_active = {
+			type: 'boolean',
+			name: 'Freeze Select Mode Active',
+			description: 'True when the Set Freeze modifier is active (dual-function mode)',
+			style: {
+				color: foregroundColor,
+				bgcolor: backgroundColorCyan,
+			},
+			options: [],
+			callback: function (_feedback, _bank) {
+				return self.freeze_select_mode === true
 			},
 		}
 

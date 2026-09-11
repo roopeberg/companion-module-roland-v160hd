@@ -211,6 +211,12 @@ module.exports = {
 		let self = this
 
 		self.sendRawCommand('RQH:020500,000001;') //Freeze on/off
+		self.sendRawCommand('RQH:020501,000001;') //Freeze type All/Select
+		// HDMI IN 1–8 (02–09) and SDI IN 1–8 (0A–11) select enable/disable
+		for (let i = 2; i <= 0x11; i++) {
+			const hex = i.toString(16).padStart(2, '0').toUpperCase()
+			self.sendRawCommand(`RQH:0205${hex},000001;`)
+		}
 	},
 
 	getOutputData: function () {
@@ -450,10 +456,22 @@ module.exports = {
 										}
 									}
 
-									if (param1 == '02' && param2 == '05' && param3 == '00') {
-										//freeze state
-										self.DATA.freeze = value
-										self.logVerbose('Received Freeze State: ' + value)
+									if (param1 == '02' && param2 == '05') {
+										const p3 = parseInt(param3, 16)
+										if (param3 == '00') {
+											//freeze on/off
+											self.DATA.freeze = value
+											self.logVerbose('Received Freeze State: ' + value)
+										} else if (param3 == '01') {
+											//freeze type All/Select
+											self.DATA.freeze_type = value
+											self.logVerbose('Received Freeze Type: ' + value)
+										} else if (p3 >= 2 && p3 <= 0x11) {
+											//freeze select input enable/disable (HDMI IN 1-8: 02-09, SDI IN 1-8: 0A-11)
+											self.DATA[`freeze_select_${param3}`] = value
+											self.logVerbose(`Received Freeze Select ${param3}: ${value}`)
+											self.checkFeedbacks('freeze_input_selected')
+										}
 									}
 
 									if (param1 == '01' && param2 == '22' && param3 == '03') {

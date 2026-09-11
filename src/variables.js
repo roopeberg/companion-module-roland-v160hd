@@ -53,6 +53,12 @@ module.exports = {
 		variables.aux3link = { name: 'Aux 3 Link' }
 
 		variables.freeze = { name: 'Freeze On/Off' }
+		variables.freeze_type = { name: 'Freeze Type (All/Select)' }
+		variables.freeze_select_mode = { name: 'Freeze Select Mode Active' }
+		for (let i = 1; i <= 8; i++) {
+			variables[`freeze_select_hdmi${i}`] = { name: `Freeze Select HDMI IN ${i}` }
+			variables[`freeze_select_sdi${i}`] = { name: `Freeze Select SDI IN ${i}` }
+		}
 
 		// PiP captured settings (populated by Capture PiP action)
 		const pipIds = [
@@ -251,6 +257,15 @@ module.exports = {
 
 			//Freeze
 			variableObj.freeze = self.DATA.freeze == '01' ? 'On' : 'Off'
+			variableObj.freeze_type = self.DATA.freeze_type == '01' ? 'Select' : 'All'
+			variableObj.freeze_select_mode = self.freeze_select_mode ? 'Active' : 'Off'
+			// HDMI IN 1-8: addresses 02-09, SDI IN 1-8: addresses 0A-11
+			for (let i = 0; i < 8; i++) {
+				const hdmiAddr = (i + 2).toString(16).padStart(2, '0').toUpperCase()
+				const sdiAddr = (i + 0x0A).toString(16).padStart(2, '0').toUpperCase()
+				variableObj[`freeze_select_hdmi${i + 1}`] = self.DATA[`freeze_select_${hdmiAddr}`] == '01' ? 'Enabled' : 'Disabled'
+				variableObj[`freeze_select_sdi${i + 1}`] = self.DATA[`freeze_select_${sdiAddr}`] == '01' ? 'Enabled' : 'Disabled'
+			}
 
 			// PiP captured settings
 			const SHAPE_LABELS = { '00': 'Rectangle', '01': 'Circle', '02': 'Diamond' }

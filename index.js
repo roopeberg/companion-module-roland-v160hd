@@ -36,6 +36,8 @@ class v160Instance extends InstanceBase {
 		this.MODEL = 'V-160HD'
 		this.VERSION = ''
 
+		this.freeze_select_mode = false
+
 		this.DATA = {
 			data_1B00: '00',
 			data_1B01: '00',

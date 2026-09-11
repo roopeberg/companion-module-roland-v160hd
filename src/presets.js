@@ -443,6 +443,156 @@ module.exports = {
 			addSection(sectionId, `Snapshot Load → DSK ${d.n}`, sectionIds)
 		}
 
+		// ── Freeze ──────────────────────────────────────────────────────────────
+
+		const FREEZE_DIM = combineRgb(20, 40, 60)
+		const FREEZE_ON = combineRgb(0, 100, 200)
+		const FREEZE_CYAN = combineRgb(0, 180, 200)
+		const FREEZE_TYPE_COLOR = combineRgb(80, 0, 140)
+
+		// Freeze on/off toggle
+		presets['freeze_toggle'] = {
+			name: 'Freeze On/Off',
+			type: 'layered',
+			elements: layeredBtn('FREEZE\nOFF', FREEZE_DIM),
+			steps: [
+				{
+					down: [
+						{ actionId: 'freezeSwitchOn', options: {} },
+					],
+					up: [],
+				},
+				{
+					down: [
+						{ actionId: 'freezeSwitchOff', options: {} },
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'freeze',
+					styleOverrides: bgOverride(FREEZE_ON),
+				},
+			],
+		}
+
+		// Freeze type All/Select toggle
+		presets['freeze_type'] = {
+			name: 'Freeze Type',
+			type: 'layered',
+			elements: layeredBtn('FREEZE\nALL', FREEZE_DIM),
+			steps: [
+				{
+					down: [{ actionId: 'freezeSwitchType', options: { type: '01' } }],
+					up: [],
+				},
+				{
+					down: [{ actionId: 'freezeSwitchType', options: { type: '00' } }],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'freeze_type_select',
+					styleOverrides: [
+						{ elementId: 'bg', elementProperty: 'color', override: { isExpression: false, value: FREEZE_TYPE_COLOR } },
+						{ elementId: 'label', elementProperty: 'text', override: { isExpression: false, value: 'FREEZE\nSELECT' } },
+					],
+				},
+			],
+		}
+
+		// Set Freeze modifier — hold to enter freeze select mode
+		presets['freeze_set_mode'] = {
+			name: 'Set Freeze (modifier)',
+			type: 'layered',
+			elements: layeredBtn('SET\nFREEZE', FREEZE_DIM),
+			steps: [
+				{
+					down: [{ actionId: 'freezeSelectModeEnable', options: {} }],
+					up: [{ actionId: 'freezeSelectModeDisable', options: {} }],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'freeze_select_mode_active',
+					styleOverrides: bgOverride(FREEZE_CYAN),
+				},
+			],
+		}
+
+		addSection('freeze_controls', 'Freeze Controls', ['freeze_toggle', 'freeze_type', 'freeze_set_mode'])
+
+		// Freeze select input buttons — HDMI 1-8, SDI 1-8
+		// Each button: normal press = PVW select, hold SET FREEZE then press = toggle freeze select
+		const freezeInputGroups = [
+			{
+				name: 'HDMI',
+				inputs: Array.from({ length: 8 }, (_, i) => ({
+					label: `HDMI ${i + 1}`,
+					pvw_id: i.toString(16).padStart(2, '0').toUpperCase(),
+					freeze_addr: (i + 2).toString(16).padStart(2, '0').toUpperCase(),
+				})),
+			},
+			{
+				name: 'SDI',
+				inputs: Array.from({ length: 8 }, (_, i) => ({
+					label: `SDI ${i + 1}`,
+					pvw_id: (8 + i).toString(16).padStart(2, '0').toUpperCase(),
+					freeze_addr: (i + 0x0A).toString(16).padStart(2, '0').toUpperCase(),
+				})),
+			},
+		]
+
+		for (const group of freezeInputGroups) {
+			const sectionId = `freeze_select_${group.name.toLowerCase()}`
+			const sectionIds = []
+			for (const inp of group.inputs) {
+				const id = `${sectionId}_${inp.freeze_addr}`
+				presets[id] = {
+					name: `Freeze Select / PVW: ${inp.label}`,
+					type: 'layered',
+					elements: layeredBtn(inp.label, FREEZE_DIM),
+					steps: [
+						{
+							down: [
+								{
+									actionId: 'pvwOrFreezeToggle',
+									options: { input: inp.pvw_id, freeze_addr: inp.freeze_addr },
+								},
+							],
+							up: [],
+						},
+					],
+					feedbacks: [
+						// PVW tally — green when this source is on PVW
+						{
+							feedbackId: 'bus_tally',
+							options: { bus: 'pvw', source: inp.pvw_id },
+							styleOverrides: bgOverride(GREEN),
+						},
+						// Freeze select mode active — cyan tint overlay
+						{
+							feedbackId: 'freeze_select_mode_active',
+							styleOverrides: bgOverride(FREEZE_CYAN),
+						},
+						// This input is currently freeze-selected — bright cyan
+						{
+							feedbackId: 'freeze_input_selected',
+							options: { input: inp.freeze_addr },
+							styleOverrides: [
+								{ elementId: 'bg', elementProperty: 'color', override: { isExpression: false, value: FREEZE_CYAN } },
+								{ elementId: 'label', elementProperty: 'text', override: { isExpression: false, value: `❄ ${inp.label}` } },
+							],
+						},
+					],
+				}
+				sectionIds.push(id)
+			}
+			addSection(sectionId, `Freeze Select — ${group.name}`, sectionIds)
+		}
+
 		self.setPresetDefinitions(structure, presets)
 	},
 }

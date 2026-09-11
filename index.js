@@ -37,6 +37,7 @@ class v160Instance extends InstanceBase {
 		this.VERSION = ''
 
 		this.freeze_select_mode = false
+		this.pipSourceDataLoaded = false
 
 		this.DATA = {
 			data_1B00: '00',

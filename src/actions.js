@@ -1568,6 +1568,15 @@ module.exports = {
 				let address = '00' + options.pinp.toString(16).padStart(2, '0').toUpperCase() + '02'
 				let value = options.assign.toString(16).padStart(2, '0').toUpperCase()
 				self.sendCommand(address, value)
+
+				// Optimistic update
+				const keyIndex = options.pinp - 27 + 1 // 27→1, 28→2, 29→3, 30→4
+				const lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => item.id == value)
+				self.DATA[`pnpkey${keyIndex}source`] = value
+				if (lookup) self.DATA[`pnpkey${keyIndex}sourcename`] = lookup.label
+				self.refreshPipSourceData()
+				self.checkFeedbacks('pnpKeySource')
+				self.updateVariables()
 			},
 		}
 

@@ -10,7 +10,7 @@ const SNAPSHOT_DIR = path.join(os.homedir(), 'v160hd-snapshots')
 // Only these are persisted to and restored from snapshot files so that live state
 // (PiP on-air, PGM/PVW source, AUX, mute, outputs …) is never overwritten.
 const PIP_PREFIXES = ['1B', '1C', '1D', '1E']
-const PIP_SUFFIXES = new Set(['02', '03', '04', '06', '08', '0A', '0C', '0E', '0F', '10', '11', '13', '15'])
+const PIP_SUFFIXES = new Set(['00', '01', '02', '03', '04', '06', '08', '0A', '0C', '0E', '0F', '10', '11', '13', '15'])
 const DSK_PREFIXES = ['1F', '20']
 const DSK_SUFFIXES = new Set(['00', '01', '02', '03', '04', '05', '06', '07', '09'])
 function isCaptureKey(k) {
@@ -165,7 +165,11 @@ module.exports = {
 		let self = this
 
 		//self.getTallyData();
-		self.getPinpKeyData()
+		self.getPinpKeyTally()
+		// PiP source: read once at startup, then only on explicit refresh.
+		if (!self.pipSourceDataLoaded) {
+			self.getPinpKeySource()
+		}
 		self.getAuxData()
 		self.getOutputData()
 		self.getAuxLinkData()
@@ -180,7 +184,7 @@ module.exports = {
 		}
 	},
 
-	getPinpKeyData: function () {
+	getPinpKeyTally: function () {
 		let self = this
 
 		self.sendRawCommand('RQH:001B00,000001;') //PnP/Key 1 on PGM
@@ -191,12 +195,21 @@ module.exports = {
 		self.sendRawCommand('RQH:001D01,000001;') //PnP/Key 3 on PVW
 		self.sendRawCommand('RQH:001E00,000001;') //PnP/Key 4 on PGM
 		self.sendRawCommand('RQH:001E01,000001;') //PnP/Key 4 on PVW
+	},
 
-		//get sources for pnp/keys
+	getPinpKeySource: function () {
+		let self = this
+
 		self.sendRawCommand('RQH:001B02,000001;') //PnP/Key 1 source
 		self.sendRawCommand('RQH:001C02,000001;') //PnP/Key 2 source
 		self.sendRawCommand('RQH:001D02,000001;') //PnP/Key 3 source
 		self.sendRawCommand('RQH:001E02,000001;') //PnP/Key 4 source
+		self.pipSourceDataLoaded = true
+	},
+
+	refreshPipSourceData: function () {
+		let self = this
+		self.pipSourceDataLoaded = false
 	},
 
 	getAuxData: function () {
@@ -728,6 +741,8 @@ module.exports = {
 		let self = this
 		// 1-byte params use size 000001, 2-byte params use 000002
 		const params = [
+			{ s: '00', n: '000001' }, // on PGM (bus select)
+			{ s: '01', n: '000001' }, // on PVW (bus select)
 			{ s: '02', n: '000001' }, // source
 			{ s: '03', n: '000001' }, // type
 			{ s: '04', n: '000002' }, // position H
@@ -752,6 +767,8 @@ module.exports = {
 		let self = this
 		// Re-send all captured raw values back to the device
 		const params = [
+			{ suffix: '00', key: `data_${pinp}00` }, // on PGM (bus select)
+			{ suffix: '01', key: `data_${pinp}01` }, // on PVW (bus select)
 			{ suffix: '02', key: `data_${pinp}02` }, // source (1 byte)
 			{ suffix: '03', key: `data_${pinp}03` }, // type (1 byte)
 			{ suffix: '04', key: `data_${pinp}04` }, // position H (2 bytes)

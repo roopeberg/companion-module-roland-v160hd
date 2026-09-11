@@ -75,12 +75,7 @@ module.exports = {
 				if (socket !== self.socket) return
 				self.log('info', 'Connected — waiting for auth prompt')
 				self.tcpBuffer = ''
-				// Reset startup-once flags so all device state is re-read after
-				// every (re)connect, including automatic TCPHelper reconnects.
-				self.pipSourceDataLoaded = false
-				self.freezeDataLoaded = false
-				self.memoryNamesLoaded = false
-				self.transitionDataLoaded = false
+				self.memoryNameIndex = 0
 				self.updateStatus(InstanceStatus.Connecting, 'Authenticating')
 			})
 
@@ -154,46 +149,53 @@ module.exports = {
 			self.INTERVAL = undefined
 		}
 
-		if (self.config.polling) {
-			const MIN_RATE = 300
-			const MAX_RATE = 30000
-			const DEFAULT_RATE = 500
-			const raw = String(self.config.pollingrate ?? '').trim()
-			const parsed = /^\d+$/.test(raw) ? Number(raw) : NaN
-			const rate = Number.isFinite(parsed) ? Math.min(MAX_RATE, Math.max(MIN_RATE, parsed)) : DEFAULT_RATE
-			if (raw !== '' && rate !== parsed) {
-				self.log('warn', `Polling rate clamped to ${rate} ms (was '${self.config.pollingrate}')`)
-			}
-			self.log('info', `Starting Update Interval: Fetching new data from Device every ${rate}ms.`)
-			self.INTERVAL = setInterval(self.getData.bind(this), rate)
-		} else {
+		if (!self.config.polling) {
 			self.log('info', 'Polling is disabled. Module will not request new data at a regular rate.')
+			return
 		}
+
+		const MIN_RATE = 300
+		const MAX_RATE = 30000
+		const DEFAULT_RATE = 500
+		const raw = String(self.config.pollingrate ?? '').trim()
+		const parsed = /^\d+$/.test(raw) ? Number(raw) : NaN
+		const rate = Number.isFinite(parsed) ? Math.min(MAX_RATE, Math.max(MIN_RATE, parsed)) : DEFAULT_RATE
+		if (raw !== '' && rate !== parsed) {
+			self.log('warn', `Polling rate clamped to ${rate} ms (was '${self.config.pollingrate}')`)
+		}
+		self.log('info', `Starting polling: fast=${rate}ms, medium=${rate * 2}ms, background=${rate * 10}ms`)
+
+		self._pollTick = 0
+		// Fire all tiers immediately so Companion has full state before the first scheduled tick.
+		self._doPoll(true)
+		self.INTERVAL = setInterval(() => self._doPoll(false), rate)
 	},
 
-	getData: function () {
+	// Multi-speed poll tick.
+	//   Fast (every tick):      PiP tally + bus sources     — reflects live switch-panel changes
+	//   Medium (every 2 ticks): AUX mutes + one memory name — changes only on user action
+	//   Background (every 10):  PiP sources, freeze, outputs, AUX links, transition — rarely change
+	// immediate=true fires all tiers at once (used on connect/reconnect).
+	_doPoll: function (immediate) {
 		let self = this
+		self._pollTick = (self._pollTick || 0) + 1
 
-		//self.getTallyData();
+		// Fast
 		self.getPinpKeyTally()
-		// PiP source: read once at startup, then only on explicit refresh.
-		if (!self.pipSourceDataLoaded) {
-			self.getPinpKeySource()
-		}
-		self.getAuxData()
-		self.getOutputData()
-		self.getAuxLinkData()
-		// Freeze: read once at startup, then only on explicit refresh.
-		if (!self.freezeDataLoaded) {
-			self.getFreezeData()
-		}
-		// Memory names: cycle through all 30 slots once at startup, then stop.
-		// Restarted by save_memory_trigger so a renamed slot is picked up.
-		if (!self.memoryNamesLoaded) {
+		self.getAuxSources()
+
+		// Medium (~1 s at default rate)
+		if (immediate || self._pollTick % 2 === 0) {
+			self.getAuxMutes()
 			self.getNextMemoryName()
 		}
-		// Transition settings: read once at startup, then only on explicit refresh.
-		if (!self.transitionDataLoaded) {
+
+		// Background (~5 s at default rate)
+		if (immediate || self._pollTick % 10 === 0) {
+			self.getPinpKeySource()
+			self.getFreezeData()
+			self.getOutputData()
+			self.getAuxLinkData()
 			self.getTransitionData()
 		}
 	},
@@ -215,12 +217,10 @@ module.exports = {
 		self.sendRawCommand('RQH:001C02,000001;') //PnP/Key 2 source
 		self.sendRawCommand('RQH:001D02,000001;') //PnP/Key 3 source
 		self.sendRawCommand('RQH:001E02,000001;') //PnP/Key 4 source
-		self.pipSourceDataLoaded = true
 	},
 
 	refreshPipSourceData: function () {
-		let self = this
-		self.pipSourceDataLoaded = false
+		this.getPinpKeySource()
 	},
 
 	getAuxSources: function () {
@@ -263,8 +263,7 @@ module.exports = {
 	},
 
 	refreshFreezeData: function () {
-		let self = this
-		self.freezeDataLoaded = false
+		this.getFreezeData()
 	},
 
 	getOutputData: function () {
@@ -327,8 +326,8 @@ module.exports = {
 		}
 	},*/
 
-	// Requests one memory slot's name per poll cycle (one 8-byte RQH block)
-	// instead of all 240 individual queries at once. Cycles through slots 0–29.
+	// Requests one memory slot's name per medium poll tick (one 8-byte RQH block).
+	// Cycles through slots 0–29 continuously at ~1 s per slot = 30 s full refresh.
 	getNextMemoryName: function () {
 		let self = this
 
@@ -340,16 +339,11 @@ module.exports = {
 		// Read all 8 name characters for this slot in one query (60xx00–60xx07).
 		self.sendRawCommand('RQH:60' + hexMemory + '00,000008;')
 		self.memoryNameIndex = (i + 1) % 30
-		// All 30 slots requested — stop until next save resets the flag
-		if (self.memoryNameIndex === 0) {
-			self.memoryNamesLoaded = true
-		}
 	},
 
 	refreshMemoryNames: function () {
-		let self = this
-		self.memoryNameIndex = 0
-		self.memoryNamesLoaded = false
+		// Reset the cycle index so a recently renamed slot is picked up within one cycle.
+		this.memoryNameIndex = 0
 	},
 
 	getLastMemoryLoaded: function () {

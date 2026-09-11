@@ -56,6 +56,32 @@ module.exports = {
 			return [{ elementId: 'bg', elementProperty: 'color', override: { isExpression: false, value: color } }]
 		}
 
+		function borderOverride(color) {
+			return [{ elementId: 'border', elementProperty: 'color', override: { isExpression: false, value: color } }]
+		}
+
+		function dotOverride(id, color) {
+			return [{ elementId: id, elementProperty: 'color', override: { isExpression: false, value: color } }]
+		}
+
+		// Source button with bus label (top-left) + PGM/PVW dots (top-right)
+		// + AUX1/AUX2/AUX3 squares (bottom thirds) + border feedback layer.
+		// All secondary indicator elements are always included (start DARK);
+		// feedbacks selectively light them up per button type.
+		function sourceBtn(sourceLabel, busLabel, busLabelColor) {
+			return [
+				{ type: 'box', id: 'border', x: 0, y: 0, width: 100, height: 100, color: DARK },
+				{ type: 'box', id: 'bg', x: 3, y: 3, width: 94, height: 94, color: DARK },
+				{ type: 'text', id: 'bus_label', x: 4, y: 4, width: 68, height: 14, text: busLabel, fontsize: 14, fontsizeAllowShrink: true, color: busLabelColor, halign: 'left', valign: 'top' },
+				{ type: 'box', id: 'pgm_dot', x: 74, y: 5, width: 10, height: 11, color: DARK },
+				{ type: 'box', id: 'pvw_dot', x: 86, y: 5, width: 10, height: 11, color: DARK },
+				{ type: 'text', id: 'label', x: 3, y: 20, width: 94, height: 65, text: sourceLabel, fontsize: FONT_SIZE, fontsizeAllowShrink: true, color: WHITE, halign: 'center', valign: 'center' },
+				{ type: 'box', id: 'dot_aux1', x: 3, y: 87, width: 29, height: 10, color: DARK },
+				{ type: 'box', id: 'dot_aux2', x: 35, y: 87, width: 29, height: 10, color: DARK },
+				{ type: 'box', id: 'dot_aux3', x: 67, y: 87, width: 29, height: 10, color: DARK },
+			]
+		}
+
 		// Source groups
 		const HDMI_SOURCES = Array.from({ length: 8 }, (_, i) => ({
 			label: `HDMI ${i + 1}`,
@@ -78,15 +104,40 @@ module.exports = {
 			tally_id: 32 + i,
 		}))
 
+		const PGM_LABEL_COLOR = combineRgb(120, 0, 0)
+		const PVW_LABEL_COLOR = combineRgb(0, 100, 0)
+		const AUX1_LABEL_COLOR = combineRgb(90, 50, 0)
+		const AUX2_LABEL_COLOR = combineRgb(0, 70, 90)
+		const AUX3_LABEL_COLOR = combineRgb(70, 0, 100)
+
 		const AUX_DESTS = [
-			{ label: 'AUX 1', aux_address: '000011', bus: 'aux1', dimColor: AMBER_DIM, activeColor: AMBER },
-			{ label: 'AUX 2', aux_address: '00002E', bus: 'aux2', dimColor: CYAN_DIM, activeColor: CYAN_AUX },
-			{ label: 'AUX 3', aux_address: '00002F', bus: 'aux3', dimColor: VIOLET_DIM, activeColor: VIOLET },
+			{ label: 'AUX 1', aux_address: '000011', bus: 'aux1', labelColor: AUX1_LABEL_COLOR, activeColor: AMBER },
+			{ label: 'AUX 2', aux_address: '00002E', bus: 'aux2', labelColor: AUX2_LABEL_COLOR, activeColor: CYAN_AUX },
+			{ label: 'AUX 3', aux_address: '00002F', bus: 'aux3', labelColor: AUX3_LABEL_COLOR, activeColor: VIOLET },
 		]
 		const pgmpvwDests = [
-			{ label: 'PGM', actionId: 'select_pgm', bus: 'pgm', activeColor: RED },
-			{ label: 'PVW', actionId: 'select_pvw', bus: 'pvw', activeColor: GREEN },
+			{ label: 'PGM', actionId: 'select_pgm', bus: 'pgm', labelColor: PGM_LABEL_COLOR, activeColor: RED },
+			{ label: 'PVW', actionId: 'select_pvw', bus: 'pvw', labelColor: PVW_LABEL_COLOR, activeColor: GREEN },
 		]
+
+		// Secondary tally feedbacks for all source buttons (PGM/PVW dots + AUX1-3 squares).
+		// primaryBus is excluded from secondary feedbacks since it's shown by the border.
+		function secondaryFeedbacks(source, primaryBus) {
+			const all = [
+				{ bus: 'pgm', elementId: 'pgm_dot', color: RED },
+				{ bus: 'pvw', elementId: 'pvw_dot', color: GREEN },
+				{ bus: 'aux1', elementId: 'dot_aux1', color: AMBER },
+				{ bus: 'aux2', elementId: 'dot_aux2', color: CYAN_AUX },
+				{ bus: 'aux3', elementId: 'dot_aux3', color: VIOLET },
+			]
+			return all
+				.filter((b) => b.bus !== primaryBus)
+				.map((b) => ({
+					feedbackId: 'bus_tally',
+					options: { bus: b.bus, source },
+					styleOverrides: dotOverride(b.elementId, b.color),
+				}))
+		}
 		const sourceGroups = [
 			{ name: 'HDMI', sources: HDMI_SOURCES },
 			{ name: 'SDI', sources: SDI_SOURCES },
@@ -118,21 +169,16 @@ module.exports = {
 				const sectionIds = []
 				for (const src of group.sources) {
 					const id = `${sectionId}_${src.pgmpvw_id}`
-					const feedbacks = [
-						{
-							feedbackId: 'bus_tally',
-							options: { bus: dest.bus, source: src.pgmpvw_id },
-							styleOverrides: bgOverride(dest.activeColor),
-						},
-					]
-					presets[id] = preset(
-						`${dest.label}: ${src.label}`,
-						src.label,
-						DARK,
-						dest.actionId,
-						{ input: src.pgmpvw_id },
-						feedbacks,
-					)
+					presets[id] = {
+						name: `${dest.label}: ${src.label}`,
+						type: 'layered',
+						elements: sourceBtn(src.label, dest.label, dest.labelColor),
+						steps: [{ down: [{ actionId: dest.actionId, options: { input: src.pgmpvw_id } }], up: [] }],
+						feedbacks: [
+							{ feedbackId: 'bus_tally', options: { bus: dest.bus, source: src.pgmpvw_id }, styleOverrides: borderOverride(dest.activeColor) },
+							...secondaryFeedbacks(src.pgmpvw_id, dest.bus),
+						],
+					}
 					sectionIds.push(id)
 				}
 				addSection(sectionId, `${dest.label} - ${group.name}`, sectionIds)
@@ -149,16 +195,13 @@ module.exports = {
 					presets[id] = {
 						name: `${aux.label}: ${src.label}`,
 						type: 'layered',
-						elements: layeredBtn(src.label, aux.dimColor),
+						elements: sourceBtn(src.label, aux.label, aux.labelColor),
 						steps: [
 							{ down: [{ actionId: 'aux_assign', options: { aux: aux.aux_address, assign: src.pgmpvw_id } }], up: [] },
 						],
 						feedbacks: [
-							{
-								feedbackId: 'bus_tally',
-								options: { bus: aux.bus, source: src.pgmpvw_id },
-								styleOverrides: bgOverride(aux.activeColor),
-							},
+							{ feedbackId: 'bus_tally', options: { bus: aux.bus, source: src.pgmpvw_id }, styleOverrides: borderOverride(aux.activeColor) },
+							...secondaryFeedbacks(src.pgmpvw_id, aux.bus),
 						],
 					}
 					sectionIds.push(id)
@@ -553,38 +596,44 @@ module.exports = {
 				presets[id] = {
 					name: `Freeze Select / PVW: ${inp.label}`,
 					type: 'layered',
-					elements: layeredBtn(inp.label, FREEZE_DIM),
+					elements: [
+						// border: freeze-selected → cyan
+						{ type: 'box', id: 'border', x: 0, y: 0, width: 100, height: 100, color: FREEZE_DIM },
+						// bg: always dark inner
+						{ type: 'box', id: 'bg', x: 3, y: 3, width: 94, height: 83, color: FREEZE_DIM },
+						// pvw_dot: top-right, lights green when PVW active
+						{ type: 'box', id: 'pvw_dot', x: 83, y: 5, width: 12, height: 12, color: FREEZE_DIM },
+						// input name (center of inner area)
+						{ type: 'text', id: 'label', x: 3, y: 5, width: 78, height: 79, text: inp.label, fontsize: FONT_SIZE, fontsizeAllowShrink: true, color: WHITE, halign: 'center', valign: 'center' },
+						// set_mode_bar: bottom strip, lights cyan when SET FREEZE modifier active
+						{ type: 'box', id: 'set_mode_bar', x: 3, y: 88, width: 94, height: 9, color: FREEZE_DIM },
+					],
 					steps: [
 						{
-							down: [
-								{
-									actionId: 'pvwOrFreezeToggle',
-									options: { input: inp.pvw_id, freeze_addr: inp.freeze_addr },
-								},
-							],
+							down: [{ actionId: 'pvwOrFreezeToggle', options: { input: inp.pvw_id, freeze_addr: inp.freeze_addr } }],
 							up: [],
 						},
 					],
 					feedbacks: [
-						// PVW tally — green when this source is on PVW
+						// PVW tally — pvw_dot turns green (independent of other states)
 						{
 							feedbackId: 'bus_tally',
 							options: { bus: 'pvw', source: inp.pvw_id },
-							styleOverrides: bgOverride(GREEN),
+							styleOverrides: dotOverride('pvw_dot', GREEN),
 						},
-						// Freeze select mode active — cyan tint overlay
-						{
-							feedbackId: 'freeze_select_mode_active',
-							styleOverrides: bgOverride(FREEZE_CYAN),
-						},
-						// This input is currently freeze-selected — bright cyan
+						// Freeze-selected — border turns cyan + label gets ❄ prefix
 						{
 							feedbackId: 'freeze_input_selected',
 							options: { input: inp.freeze_addr },
 							styleOverrides: [
-								{ elementId: 'bg', elementProperty: 'color', override: { isExpression: false, value: FREEZE_CYAN } },
+								...borderOverride(FREEZE_CYAN),
 								{ elementId: 'label', elementProperty: 'text', override: { isExpression: false, value: `❄ ${inp.label}` } },
 							],
+						},
+						// SET FREEZE mode active — bottom bar turns cyan
+						{
+							feedbackId: 'freeze_select_mode_active',
+							styleOverrides: dotOverride('set_mode_bar', FREEZE_CYAN),
 						},
 					],
 				}

@@ -42,6 +42,7 @@ class v160Instance extends InstanceBase {
 		this._highQueue = []
 		this._lowQueue = []
 		this._drainScheduled = false
+		this._drainGeneration = 0
 
 		this.DATA = {
 			data_1B00: '00',

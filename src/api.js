@@ -700,12 +700,17 @@ module.exports = {
 			self._drainScheduled = true
 			// First drain fires immediately so user commands feel instant;
 			// subsequent batches use a real delay to avoid device overload.
-			setImmediate(() => self._drainBatch())
+			const gen = self._drainGeneration
+			setImmediate(() => self._drainBatch(gen))
 		}
 	},
 
-	_drainBatch: function () {
+	_drainBatch: function (gen) {
 		let self = this
+
+		// Stale callback from before a _clearQueue call — discard silently.
+		if (gen !== self._drainGeneration) return
+
 		self._drainScheduled = false
 
 		// Always flush all high-priority (write) commands before any low-priority reads.
@@ -722,7 +727,8 @@ module.exports = {
 
 		if (self._highQueue.length > 0 || self._lowQueue.length > 0) {
 			self._drainScheduled = true
-			setTimeout(() => self._drainBatch(), 5)
+			const nextGen = self._drainGeneration
+			setTimeout(() => self._drainBatch(nextGen), 5)
 		}
 	},
 
@@ -730,9 +736,10 @@ module.exports = {
 		let self = this
 		self._highQueue = []
 		self._lowQueue = []
-		// _drainScheduled is left; the pending setImmediate/setTimeout will fire
-		// but find empty queues and exit cleanly. Reset so next enqueue reschedules.
 		self._drainScheduled = false
+		// Increment generation so any already-scheduled setImmediate/setTimeout
+		// callback sees a stale generation and exits without touching the new queues.
+		self._drainGeneration = (self._drainGeneration || 0) + 1
 	},
 
 	_sendDirect: function (cmd) {

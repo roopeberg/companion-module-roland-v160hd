@@ -221,6 +221,12 @@ module.exports = {
 	getAuxSources: function () {
 		let self = this
 
+		// Debounce: tally-triggered re-polls and action-triggered re-polls can
+		// arrive within milliseconds of each other. Skip if queried within 150 ms.
+		const now = Date.now()
+		if (now - (self._lastAuxSourceQuery || 0) < 150) return
+		self._lastAuxSourceQuery = now
+
 		// PGM + PVW are consecutive: 002100–002101 (2 bytes).
 		self.sendRawCommand('RQH:002100,000002;')
 		self.sendRawCommand('RQH:000011,000001;') //Aux 1 current source (not contiguous with others)
@@ -261,7 +267,6 @@ module.exports = {
 
 		// HDMI 1-3 + SDI 1-3 are consecutive: 00000A–00000F (6 bytes).
 		self.sendRawCommand('RQH:00000A,000006;')
-		self.sendRawCommand('RQH:000110,000001;') //USB output assign (not contiguous)
 	},
 
 	getAuxLinkData: function () {
@@ -672,8 +677,9 @@ module.exports = {
 											// Multi-byte: RQH:60xx00,000008 — all 8 name chars in one shot.
 											const memoryName = nameBlock.map((b) => String.fromCharCode(parseInt(b, 16))).join('')
 											self.DATA[`memory${memoryNumber}`] = memoryName
-											self.setVariableValues({ [`memoryname_${memoryNumber + 1}`]: memoryName.trimEnd() })
-											self.logVerbose(`Received memory ${memoryNumber + 1} name block: "${memoryName.trimEnd()}"`)
+											const displayName = memoryName.replace(/\0/g, '').trimEnd()
+											self.setVariableValues({ [`memoryname_${memoryNumber + 1}`]: displayName })
+											self.logVerbose(`Received memory ${memoryNumber + 1} name block: "${displayName}"`)
 										} else if (self._parseHexBlock(value, 1)) {
 											// Single-byte: individual char (legacy path, kept for safety).
 											const memoryCharIndex = parseInt(param3, 16)
@@ -786,8 +792,17 @@ module.exports = {
 		self._drainScheduled = false
 
 		if (self._highQueue.length > 0) {
-			// DTH writes: one at a time with ≥20 ms between sends to stay within
-			// the device's Data Set command rate limit.
+			// DTH writes: ≥20 ms between sends to stay within the device's Data Set
+			// rate limit. Enforce wall-clock gap even when the queue was empty between
+			// two consecutive high-priority commands (so setImmediate doesn't bypass it).
+			const elapsed = Date.now() - (self._lastHighSentAt || 0)
+			if (elapsed < 20) {
+				self._drainScheduled = true
+				const nextGen = self._drainGeneration
+				setTimeout(() => self._drainBatch(nextGen), 20 - elapsed)
+				return
+			}
+			self._lastHighSentAt = Date.now()
 			self._sendDirect(self._highQueue.shift())
 			if (self._highQueue.length > 0 || self._lowQueue.length > 0) {
 				self._drainScheduled = true

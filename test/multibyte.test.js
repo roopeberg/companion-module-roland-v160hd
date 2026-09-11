@@ -306,6 +306,14 @@ describe('Memory name block (updateData)', () => {
 		assert.equal(inst._variablesSet['memoryname_1'], 'AB')
 	})
 
+	test('NUL byte (00) terminates the display name', () => {
+		const inst = makeInstanceWithMemory()
+		// "MEMORY1\0" = 4D 45 4D 4F 52 59 31 00  (real device format)
+		inst.updateData('DTH:600000,4D454D4F52593100')
+		assert.equal(inst.DATA.memory0, 'MEMORY1\0')
+		assert.equal(inst._variablesSet['memoryname_1'], 'MEMORY1')
+	})
+
 	test('invalid block (14 hex chars instead of 16) is rejected', () => {
 		const inst = makeInstanceWithMemory()
 		inst.updateData('DTH:600000,41424344454647')

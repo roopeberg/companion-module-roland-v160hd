@@ -47,20 +47,29 @@ describe('Priority command queue', () => {
 		assert.equal(hiIdx, 0, `high-priority should be at index 0, got ${hiIdx}`)
 	})
 
-	test('consecutive high-priority commands are spaced ≥20 ms apart', async () => {
+	test('consecutive high-priority commands schedule exactly 20 ms delay between sends', async () => {
+		// Spy on global setTimeout to capture the delay value without mocking the
+		// full timer system (which would interfere with the test runner itself).
 		const { instance, sent } = makeInstance()
-		const times = []
-		const origSendDirect = instance._sendDirect.bind(instance)
-		instance._sendDirect = (cmd) => {
-			times.push(Date.now())
-			origSendDirect(cmd)
+		const orig = global.setTimeout
+		let capturedDelay = null
+		global.setTimeout = (fn, delay) => {
+			capturedDelay = delay
+			return orig(fn, delay)
 		}
-		instance.sendRawCommand('DTH:020500,01;', 'high')
-		instance.sendRawCommand('DTH:020500,00;', 'high')
-		await new Promise((r) => setTimeout(r, 150))
-		assert.equal(sent.length, 2)
-		const gap = times[1] - times[0]
-		assert.ok(gap >= 18, `expected ≥20 ms between DTH writes, got ${gap} ms`)
+		try {
+			instance.sendRawCommand('DTH:020500,01;', 'high')
+			instance.sendRawCommand('DTH:020500,00;', 'high')
+			// Wait for the setImmediate drain: sends first DTH, calls our spy.
+			await new Promise((r) => setImmediate(r))
+			assert.equal(sent.length, 1, 'first DTH sent immediately')
+			assert.equal(capturedDelay, 20, `expected setTimeout delay of 20 ms, got ${capturedDelay}`)
+		} finally {
+			global.setTimeout = orig
+		}
+		// Let the real 20 ms timer fire so the instance is fully drained.
+		await new Promise((r) => orig(r, 50))
+		assert.equal(sent.length, 2, 'second DTH sent after timer fires')
 	})
 
 	test('_clearQueue discards all pending commands before first drain', async () => {

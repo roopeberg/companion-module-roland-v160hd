@@ -233,14 +233,10 @@ module.exports = {
 	getFreezeData: function () {
 		let self = this
 
-		self.sendRawCommand('RQH:020500,000001;') //Freeze on/off
-		self.sendRawCommand('RQH:020501,000001;') //Freeze type All/Select
-		// HDMI IN 1–8 (02–09) and SDI IN 1–8 (0A–11) select enable/disable
-		for (let i = 2; i <= 0x11; i++) {
-			const hex = i.toString(16).padStart(2, '0').toUpperCase()
-			self.sendRawCommand(`RQH:0205${hex},000001;`)
-		}
-		// Mark loaded so getData() stops re-issuing these queries each cycle
+		// Read all 18 freeze bytes in one query: 020500 (freeze on/off) through
+		// 020511 (SDI IN 8 select) = 0x12 consecutive bytes.
+		self.sendRawCommand('RQH:020500,000012;')
+		// Mark loaded so getData() stops re-issuing this query each cycle
 		self.freezeDataLoaded = true
 	},
 
@@ -497,20 +493,36 @@ module.exports = {
 									}
 
 									if (param1 == '02' && param2 == '05') {
-										const p3 = parseInt(param3, 16)
-										if (param3 == '00') {
-											//freeze on/off
-											self.DATA.freeze = value
-											self.logVerbose('Received Freeze State: ' + value)
-										} else if (param3 == '01') {
-											//freeze type All/Select
-											self.DATA.freeze_type = value
-											self.logVerbose('Received Freeze Type: ' + value)
-										} else if (p3 >= 2 && p3 <= 0x11) {
-											//freeze select input enable/disable (HDMI IN 1-8: 02-09, SDI IN 1-8: 0A-11)
-											self.DATA[`freeze_select_${param3}`] = value
-											self.logVerbose(`Received Freeze Select ${param3}: ${value}`)
-											self.checkFeedbacks('freeze_input_selected')
+										if (value.length > 2) {
+											// Multi-byte response from RQH:020500,000012 — parse all 18 bytes at once.
+											for (let i = 0; i * 2 < value.length && i <= 0x11; i++) {
+												const byteVal = value.slice(i * 2, i * 2 + 2)
+												if (i === 0) {
+													self.DATA.freeze = byteVal
+												} else if (i === 1) {
+													self.DATA.freeze_type = byteVal
+												} else {
+													const addrHex = i.toString(16).padStart(2, '0').toUpperCase()
+													self.DATA[`freeze_select_${addrHex}`] = byteVal
+												}
+											}
+											self.logVerbose('Received freeze block: ' + value)
+											self.checkFeedbacks('freeze', 'freeze_type_select', 'freeze_input_selected')
+											self.checkVariables()
+										} else {
+											// Single-byte response — individual query or optimistic update echo.
+											const p3 = parseInt(param3, 16)
+											if (param3 == '00') {
+												self.DATA.freeze = value
+												self.logVerbose('Received Freeze State: ' + value)
+											} else if (param3 == '01') {
+												self.DATA.freeze_type = value
+												self.logVerbose('Received Freeze Type: ' + value)
+											} else if (p3 >= 2 && p3 <= 0x11) {
+												self.DATA[`freeze_select_${param3}`] = value
+												self.logVerbose(`Received Freeze Select ${param3}: ${value}`)
+												self.checkFeedbacks('freeze_input_selected')
+											}
 										}
 									}
 

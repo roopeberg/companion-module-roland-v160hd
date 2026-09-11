@@ -121,7 +121,7 @@ edge cases.
 
 Requires polling to be enabled.
 
-Memory names are fetched one slot (8 RQH commands) per poll cycle, cycling
+Memory names are fetched one slot (one 8-byte RQH block) per poll cycle, cycling
 through all 30 slots. At 1 s polling, all 30 names populate within ~30 s.
 Memory names are not fetched at all when polling is disabled.
 

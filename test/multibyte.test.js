@@ -235,3 +235,87 @@ describe('Aux link block (updateData)', () => {
 		assert.equal(inst.DATA.aux1link, undefined)
 	})
 })
+
+// ---------------------------------------------------------------------------
+// PiP/Key tally pairs — via real updateData
+// ---------------------------------------------------------------------------
+
+describe('PiP tally pair block (updateData)', () => {
+	test('2-byte block for key 1B stores PGM and PVW tally bytes', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:001B00,0102')
+		assert.equal(inst.DATA.data_1B00, '01')
+		assert.equal(inst.DATA.data_1B01, '02')
+	})
+
+	test('2-byte block for key 1C stores PGM and PVW tally bytes', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:001C00,0304')
+		assert.equal(inst.DATA.data_1C00, '03')
+		assert.equal(inst.DATA.data_1C01, '04')
+	})
+
+	test('single-byte fallback for key 1D stores byte in data_1D00', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:001D00,01')
+		assert.equal(inst.DATA.data_1D00, '01')
+		assert.equal(inst.DATA.data_1D01, undefined)
+	})
+
+	test('invalid value (3 hex chars) for key 1E is rejected', () => {
+		const inst = makeInstance()
+		inst.updateData('DTH:001E00,01F')
+		assert.ok(inst._warnings.some((w) => w.includes('1E')))
+		assert.equal(inst.DATA.data_1E00, undefined)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Memory name block (8 bytes) — via real updateData
+// ---------------------------------------------------------------------------
+
+describe('Memory name block (updateData)', () => {
+	let memoryNameCalls
+
+	function makeInstanceWithMemory() {
+		const inst = makeInstance()
+		memoryNameCalls = 0
+		inst.getNextMemoryName = () => memoryNameCalls++
+		// Preset memory slot index to 0 (slot 1)
+		inst.memoryNameIndex = 0
+		inst.memoryNamesLoaded = false
+		// Provide setVariableValues stub that records calls
+		inst._variablesSet = {}
+		inst.setVariableValues = (vars) => Object.assign(inst._variablesSet, vars)
+		return inst
+	}
+
+	test('16-char hex block is decoded to ASCII name', () => {
+		const inst = makeInstanceWithMemory()
+		// "SHOW    " = 53 48 4F 57 20 20 20 20
+		inst.updateData('DTH:600000,5348_4F572020_2020'.replace(/_/g, ''))
+		assert.equal(inst.DATA.memory0, 'SHOW    ')
+		assert.equal(inst._variablesSet['memoryname_1'], 'SHOW')
+	})
+
+	test('name with trailing spaces is trimEnd-ed in the variable', () => {
+		const inst = makeInstanceWithMemory()
+		// "AB      " = 41 42 20 20 20 20 20 20
+		inst.updateData('DTH:600000,4142202020202020')
+		assert.equal(inst.DATA.memory0, 'AB      ')
+		assert.equal(inst._variablesSet['memoryname_1'], 'AB')
+	})
+
+	test('invalid block (14 hex chars instead of 16) is rejected', () => {
+		const inst = makeInstanceWithMemory()
+		inst.updateData('DTH:600000,41424344454647')
+		assert.equal(inst.DATA.memory0, undefined)
+	})
+
+	test('block for slot 6 (address 600500) stores name in memory5', () => {
+		const inst = makeInstanceWithMemory()
+		inst.updateData('DTH:600500,4142202020202020')
+		assert.equal(inst.DATA.memory5, 'AB      ')
+		assert.equal(inst._variablesSet['memoryname_6'], 'AB')
+	})
+})

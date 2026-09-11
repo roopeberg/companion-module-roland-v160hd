@@ -1700,7 +1700,7 @@ module.exports = {
 				let address = '00' + '21' + '00'
 				let value = options.input
 				self.sendCommand(address, value)
-				self.getAuxData()
+				self.getAuxSources()
 			},
 		}
 
@@ -1720,7 +1720,7 @@ module.exports = {
 				let address = '00' + '21' + '01'
 				let value = options.input
 				self.sendCommand(address, value)
-				self.getAuxData()
+				self.getAuxSources()
 			},
 		}
 
@@ -1956,7 +1956,7 @@ module.exports = {
 					self.checkVariables()
 				} else {
 					self.sendCommand('002101', options.input)
-					self.getAuxData()
+					self.getAuxSources()
 				}
 			},
 		}

@@ -597,7 +597,6 @@ module.exports = {
 
 		const MEM_DIM = combineRgb(20, 20, 50)
 		const MEM_ACTIVE = combineRgb(180, 80, 0)
-		const MEM_SAVE = combineRgb(60, 120, 0)
 
 		const loadIds = []
 		const saveIds = []

@@ -308,8 +308,8 @@ module.exports = {
 		}
 	},*/
 
-	// Requests one memory slot's 8 name characters per poll cycle (8 RQH commands)
-	// instead of all 240 at once. Cycles through memories 0–29 on successive calls.
+	// Requests one memory slot's name per poll cycle (one 8-byte RQH block)
+	// instead of all 240 individual queries at once. Cycles through slots 0–29.
 	getNextMemoryName: function () {
 		let self = this
 

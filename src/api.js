@@ -33,6 +33,10 @@ module.exports = {
 			self.INTERVAL = undefined
 		}
 
+		// Discard any queued commands from the old connection so they don't
+		// arrive on a new socket after reconnect.
+		self._clearQueue()
+
 		if (self.socket !== undefined) {
 			self.socket.destroy()
 			delete self.socket
@@ -677,7 +681,7 @@ module.exports = {
 		self.sendRawCommand(cmd)
 	},
 
-	// Enqueue a command. priority 'high' jumps ahead of all pending poll queries.
+	// Enqueue a command. High-priority writes are sent before pending low-priority requests.
 	sendRawCommand: function (command, priority = 'low') {
 		let self = this
 
@@ -694,6 +698,8 @@ module.exports = {
 
 		if (!self._drainScheduled) {
 			self._drainScheduled = true
+			// First drain fires immediately so user commands feel instant;
+			// subsequent batches use a real delay to avoid device overload.
 			setImmediate(() => self._drainBatch())
 		}
 	},
@@ -702,12 +708,13 @@ module.exports = {
 		let self = this
 		self._drainScheduled = false
 
-		// Always flush all high-priority commands first
+		// Always flush all high-priority (write) commands before any low-priority reads.
 		while (self._highQueue.length > 0) {
 			self._sendDirect(self._highQueue.shift())
 		}
 
-		// Send a small batch of low-priority so high-priority can jump in next time
+		// Send a small batch of low-priority reads; real delay before next batch
+		// lets the device breathe and keeps high-priority commands responsive.
 		const BATCH = 4
 		for (let i = 0; i < BATCH && self._lowQueue.length > 0; i++) {
 			self._sendDirect(self._lowQueue.shift())
@@ -715,8 +722,17 @@ module.exports = {
 
 		if (self._highQueue.length > 0 || self._lowQueue.length > 0) {
 			self._drainScheduled = true
-			setImmediate(() => self._drainBatch())
+			setTimeout(() => self._drainBatch(), 5)
 		}
+	},
+
+	_clearQueue: function () {
+		let self = this
+		self._highQueue = []
+		self._lowQueue = []
+		// _drainScheduled is left; the pending setImmediate/setTimeout will fire
+		// but find empty queues and exit cleanly. Reset so next enqueue reschedules.
+		self._drainScheduled = false
 	},
 
 	_sendDirect: function (cmd) {

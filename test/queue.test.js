@@ -1,6 +1,6 @@
 'use strict'
 
-const { test, describe, beforeEach } = require('node:test')
+const { test, describe } = require('node:test')
 const assert = require('node:assert/strict')
 
 // Minimal stub that exercises the queue methods from api.js in isolation.
@@ -15,7 +15,6 @@ function makeInstance() {
 		socket: { isConnected: true, send: (cmd) => sent.push(cmd) },
 		log: () => {},
 	}
-	// Bind queue methods from api.js onto the stub instance.
 	const api = require('../src/api.js')
 	instance.sendRawCommand = api.sendRawCommand.bind(instance)
 	instance._drainBatch = api._drainBatch.bind(instance)
@@ -29,44 +28,56 @@ describe('Priority command queue', () => {
 		const { instance, sent } = makeInstance()
 		instance.sendRawCommand('RQH:001B00,000001;')
 		instance.sendRawCommand('RQH:001B01,000001;')
-		await new Promise((r) => setTimeout(r, 50))
+		await new Promise((r) => setTimeout(r, 100))
 		assert.equal(sent.length, 2)
 		assert.ok(sent[0].includes('001B00'))
 		assert.ok(sent[1].includes('001B01'))
 	})
 
-	test('high-priority command is sent before queued low-priority commands', async () => {
+	test('high-priority command is sent first, before any queued low-priority', async () => {
 		const { instance, sent } = makeInstance()
-		// Queue 5 low-priority commands (more than one batch)
+		// Queue 5 low-priority commands synchronously — drain not yet fired.
 		for (let i = 0; i < 5; i++) instance.sendRawCommand(`RQH:00000${i},000001;`)
-		// High-priority arrives before the next batch fires
+		// High-priority added in the same synchronous tick, before setImmediate fires.
+		// When the drain runs it must send the DTH write first.
 		instance.sendRawCommand('DTH:020500,01;', 'high')
-		await new Promise((r) => setTimeout(r, 50))
+		await new Promise((r) => setTimeout(r, 200))
 		assert.equal(sent.length, 6)
-		// First batch: 4 low sent immediately via setImmediate, then high jumps next batch
-		// High must appear before the 5th low-priority command.
 		const hiIdx = sent.findIndex((s) => s.includes('020500'))
-		assert.ok(hiIdx < 5, `high-priority sent at index ${hiIdx}, expected before index 5`)
+		assert.equal(hiIdx, 0, `high-priority should be at index 0, got ${hiIdx}`)
 	})
 
-	test('_clearQueue discards all pending commands', async () => {
+	test('consecutive high-priority commands are spaced ≥20 ms apart', async () => {
+		const { instance, sent } = makeInstance()
+		const times = []
+		const origSendDirect = instance._sendDirect.bind(instance)
+		instance._sendDirect = (cmd) => {
+			times.push(Date.now())
+			origSendDirect(cmd)
+		}
+		instance.sendRawCommand('DTH:020500,01;', 'high')
+		instance.sendRawCommand('DTH:020500,00;', 'high')
+		await new Promise((r) => setTimeout(r, 150))
+		assert.equal(sent.length, 2)
+		const gap = times[1] - times[0]
+		assert.ok(gap >= 18, `expected ≥20 ms between DTH writes, got ${gap} ms`)
+	})
+
+	test('_clearQueue discards all pending commands before first drain', async () => {
 		const { instance, sent } = makeInstance()
 		for (let i = 0; i < 10; i++) instance.sendRawCommand(`RQH:00000${i},000001;`)
+		// _clearQueue called synchronously before the setImmediate drain fires.
 		instance._clearQueue()
 		await new Promise((r) => setTimeout(r, 50))
-		// Only the commands from the first batch (up to 4) may already be sent
-		// before _clearQueue fires; none after that.
-		assert.ok(sent.length <= 4, `expected ≤4 sent after clear, got ${sent.length}`)
+		assert.equal(sent.length, 0, `expected 0 sent after clear, got ${sent.length}`)
 	})
 
 	test('generation counter prevents stale drain after _clearQueue', async () => {
 		const { instance, sent } = makeInstance()
 		instance.sendRawCommand('RQH:AAAAAA,000001;')
 		instance._clearQueue()
-		// Fresh commands after clear
 		instance.sendRawCommand('RQH:BBBBBB,000001;')
 		await new Promise((r) => setTimeout(r, 50))
-		// The stale drain (old generation) must not re-send AAAAAA after the clear.
 		const stale = sent.filter((s) => s.includes('AAAAAA'))
 		assert.equal(stale.length, 0, 'stale drain sent a cleared command')
 		assert.ok(sent.some((s) => s.includes('BBBBBB')), 'new command was not sent')

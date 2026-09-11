@@ -713,26 +713,25 @@ module.exports = {
 
 		self._drainScheduled = false
 
-		// Send up to BATCH commands: high-priority first, then low-priority to fill
-		// the remaining slots. This rate-limits both queues equally while ensuring
-		// writes always precede reads within every batch.
-		const BATCH = 4
-		let sent = 0
-
-		while (sent < BATCH && self._highQueue.length > 0) {
+		if (self._highQueue.length > 0) {
+			// DTH writes: one at a time with ≥20 ms between sends to stay within
+			// the device's Data Set command rate limit.
 			self._sendDirect(self._highQueue.shift())
-			sent++
-		}
-
-		// Fill remaining batch slots with low-priority only when no writes are waiting.
-		if (self._highQueue.length === 0) {
-			while (sent < BATCH && self._lowQueue.length > 0) {
-				self._sendDirect(self._lowQueue.shift())
-				sent++
+			if (self._highQueue.length > 0 || self._lowQueue.length > 0) {
+				self._drainScheduled = true
+				const nextGen = self._drainGeneration
+				setTimeout(() => self._drainBatch(nextGen), 20)
 			}
+			return
 		}
 
-		if (self._highQueue.length > 0 || self._lowQueue.length > 0) {
+		// No writes pending: send a batch of low-priority RQH reads.
+		const BATCH_LOW = 4
+		for (let i = 0; i < BATCH_LOW && self._lowQueue.length > 0; i++) {
+			self._sendDirect(self._lowQueue.shift())
+		}
+
+		if (self._lowQueue.length > 0) {
 			self._drainScheduled = true
 			const nextGen = self._drainGeneration
 			setTimeout(() => self._drainBatch(nextGen), 5)

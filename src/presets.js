@@ -208,7 +208,7 @@ module.exports = {
 				const id = `${sectionId}_${src.id}`
 				presets[id] = preset(`PiP ${p.n} Source: ${src.label}`, src.label, NAVY, 'pnpkey_setsource', {
 					pinp: p.id,
-					assign: src.id,
+					source: src.id,
 				})
 				sectionIds.push(id)
 			}

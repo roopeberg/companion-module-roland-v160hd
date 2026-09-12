@@ -1589,6 +1589,12 @@ module.exports = {
 				self.checkFeedbacks('pnpKeySource')
 				self.checkVariables()
 			},
+			learn: function (action) {
+				const keyIndex = action.options.pinp - 27 + 1
+				const src = self.DATA[`pnpkey${keyIndex}source`]
+				if (src === undefined) return undefined
+				return { assign: parseInt(src, 16) }
+			},
 		}
 
 		actions.set_pinp_type = {
@@ -1614,6 +1620,12 @@ module.exports = {
 				let address = '00' + options.pinp.toString(16).padStart(2, '0').toUpperCase() + '03'
 				let value = options.key.toString(16).padStart(2, '0').toUpperCase()
 				self.sendCommand(address, value)
+			},
+			learn: function (action) {
+				const pinpHex = action.options.pinp.toString(16).padStart(2, '0').toUpperCase()
+				const val = self.DATA[`data_${pinpHex}03`]
+				if (val === undefined) return undefined
+				return { key: parseInt(val, 16) }
 			},
 		}
 
@@ -1641,6 +1653,12 @@ module.exports = {
 				let value = options.assign.toString(16).padStart(2, '0').toUpperCase()
 				self.sendCommand(address, value)
 			},
+			learn: function (action) {
+				const dskHex = action.options.dsk.toString(16).padStart(2, '0').toUpperCase()
+				const val = self.DATA[`data_${dskHex}03`]
+				if (val === undefined) return undefined
+				return { assign: parseInt(val, 16) }
+			},
 		}
 
 		actions.set_dsk_fill_source = {
@@ -1667,6 +1685,12 @@ module.exports = {
 				let value = options.assign.toString(16).padStart(2, '0').toUpperCase()
 				self.sendCommand(address, value)
 			},
+			learn: function (action) {
+				const dskHex = action.options.dsk.toString(16).padStart(2, '0').toUpperCase()
+				const val = self.DATA[`data_${dskHex}04`]
+				if (val === undefined) return undefined
+				return { assign: parseInt(val, 16) }
+			},
 		}
 
 		actions.set_dsk_type = {
@@ -1692,6 +1716,12 @@ module.exports = {
 				let address = '00' + options.dsk.toString(16).padStart(2, '0').toUpperCase() + '05'
 				let value = options.key.toString(16).padStart(2, '0').toUpperCase()
 				self.sendCommand(address, value)
+			},
+			learn: function (action) {
+				const dskHex = action.options.dsk.toString(16).padStart(2, '0').toUpperCase()
+				const val = self.DATA[`data_${dskHex}05`]
+				if (val === undefined) return undefined
+				return { key: parseInt(val, 16) }
 			},
 		}
 

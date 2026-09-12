@@ -1641,10 +1641,10 @@ module.exports = {
 				},
 				{
 					type: 'dropdown',
-					label: 'Input Type',
+					label: 'Source',
 					id: 'assign',
-					default: self.CHOICES_INPUTSASSIGN[0].id,
-					choices: self.CHOICES_INPUTSASSIGN,
+					default: self.CHOICES_DSK_SOURCES[0].id,
+					choices: self.CHOICES_DSK_SOURCES,
 				},
 			],
 			callback: function (action, _bank) {
@@ -1673,10 +1673,10 @@ module.exports = {
 				},
 				{
 					type: 'dropdown',
-					label: 'Input Type',
+					label: 'Source',
 					id: 'assign',
-					default: self.CHOICES_INPUTSASSIGN[0].id,
-					choices: self.CHOICES_INPUTSASSIGN,
+					default: self.CHOICES_DSK_SOURCES[0].id,
+					choices: self.CHOICES_DSK_SOURCES,
 				},
 			],
 			callback: function (action, _bank) {

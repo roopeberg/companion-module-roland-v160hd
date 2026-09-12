@@ -4,6 +4,7 @@ const { test, describe } = require('node:test')
 const assert = require('node:assert/strict')
 
 const api = require('../src/api.js')
+const constants = require('../src/constants.js')
 
 function makeInstance(overrides) {
 	const rawCmds = []
@@ -220,5 +221,46 @@ describe('updateData INPUT assign handler', () => {
 		inst.updateData('DTH:00000A,01')
 		const keys = Object.keys(inst.DATA).filter((k) => k.startsWith('input_assign_'))
 		assert.equal(keys.length, 0, 'gap address should not produce input_assign entry')
+	})
+})
+
+// ---------------------------------------------------------------------------
+// CHOICES_INPUTSASSIGN vs CHOICES_DSK_SOURCES boundary validation
+// ---------------------------------------------------------------------------
+
+describe('CHOICES_INPUTSASSIGN source range (Input Assign context)', () => {
+	test('max id is 32 (0x20 = N/A) — no values above the N/A sentinel', () => {
+		const maxId = Math.max(...constants.CHOICES_INPUTSASSIGN.map((c) => c.id))
+		assert.equal(maxId, 32, 'Input Assign max id must be 32 (0x20 = N/A)')
+	})
+
+	test('id 32 is labelled N/A', () => {
+		const entry = constants.CHOICES_INPUTSASSIGN.find((c) => c.id === 32)
+		assert.ok(entry, 'entry with id 32 must exist')
+		assert.match(entry.label, /n\/a/i, 'entry 32 label must be N/A')
+	})
+
+	test('no id exceeds 32', () => {
+		const overflows = constants.CHOICES_INPUTSASSIGN.filter((c) => c.id > 32)
+		assert.deepEqual(overflows, [], 'CHOICES_INPUTSASSIGN must not contain ids above 0x20')
+	})
+})
+
+describe('CHOICES_DSK_SOURCES source range (DSK Key/Fill context)', () => {
+	test('id 32 maps to INPUT/XPT 1 (0x20)', () => {
+		const entry = constants.CHOICES_DSK_SOURCES.find((c) => c.id === 32)
+		assert.ok(entry, 'entry with id 32 must exist')
+		assert.match(entry.label, /input.*1$/i, 'id 32 must label INPUT/XPT 1')
+	})
+
+	test('id 51 maps to INPUT/XPT 20 (0x33)', () => {
+		const entry = constants.CHOICES_DSK_SOURCES.find((c) => c.id === 51)
+		assert.ok(entry, 'entry with id 51 must exist')
+		assert.match(entry.label, /input.*20$/i, 'id 51 must label INPUT/XPT 20')
+	})
+
+	test('max id is 51 (0x33)', () => {
+		const maxId = Math.max(...constants.CHOICES_DSK_SOURCES.map((c) => c.id))
+		assert.equal(maxId, 51, 'DSK sources max id must be 51 (0x33)')
 	})
 })

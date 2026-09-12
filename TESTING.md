@@ -218,6 +218,15 @@ Verify that all 40 source label variables populate even when polling is disabled
 4. Re-read the label from the device (disconnect and reconnect, or press Refresh) — value should still be "TEST"
 5. Test with an 8-character label ("ABCDEFGH") and a label that requires trimming ("TOOLONG!X" → stored as "TOOLONG!")
 
+## ⚠️ #31 — CUT Take and AUTO Take
+
+1. Set a source on PST from Companion (e.g. HDMI IN 2 on PVW)
+2. Press **CUT Take** preset button — device should cut instantly; PGM bus should show HDMI IN 2
+3. The `pgm_source` variable and PGM tally feedback should update immediately (optimistic)
+4. Set a different source on PST
+5. Press **AUTO Take** preset button — device should dissolve/mix to the new source over the configured transition time
+6. PGM tally feedback should update after the transition completes (within the next poll cycle)
+
 ## ⚠️ #29 — INPUT/XPT 11–20 assignment resolution
 
 Confirms that Companion correctly resolves which physical source (HDMI, SDI, etc.) is assigned to INPUT slots 11–20.

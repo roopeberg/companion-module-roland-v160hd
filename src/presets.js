@@ -1505,6 +1505,39 @@ module.exports = {
 		}
 		addSection('wipe_direction', 'Wipe Direction', wipeDirIds)
 
+		// ── Take buttons ─────────────────────────────────────────────────────────
+
+		const CUT_COLOR = combineRgb(200, 0, 0)
+		const AUTO_COLOR = combineRgb(200, 100, 0)
+
+		presets['cut_take'] = {
+			name: 'CUT Take',
+			type: 'button',
+			style: {
+				text: 'CUT',
+				size: '18',
+				color: combineRgb(255, 255, 255),
+				bgcolor: CUT_COLOR,
+			},
+			steps: [{ down: [{ actionId: 'cut_take', options: {} }], up: [] }],
+			feedbacks: [],
+		}
+
+		presets['auto_take'] = {
+			name: 'AUTO Take',
+			type: 'button',
+			style: {
+				text: 'AUTO',
+				size: '18',
+				color: combineRgb(255, 255, 255),
+				bgcolor: AUTO_COLOR,
+			},
+			steps: [{ down: [{ actionId: 'auto_take', options: {} }], up: [] }],
+			feedbacks: [],
+		}
+
+		addSection('take', 'Take', ['cut_take', 'auto_take'])
+
 		self.setPresetDefinitions(structure, presets)
 	},
 }

@@ -21,7 +21,7 @@ Bitfocus Companion module for the **Roland V-160HD** HD video switcher.
 - **AUX mute / link**
 - **PTZ camera control** — pan, tilt, zoom, focus, exposure, tally
 - **Output / input assignment**
-- **Transition** type, mix, and wipe control
+- **Transition** type, mix, and wipe control; **CUT Take** and **AUTO Take** preset buttons
 - **Optimistic updates** — tally, freeze, and source state reflected immediately on button press without waiting for the next poll
 
 ## INPUT/XPT slots and panel operation modes

@@ -1501,6 +1501,31 @@ module.exports = {
 			},
 		}
 
+		actions.cut_take = {
+			name: 'CUT Take',
+			options: [],
+			callback: function () {
+				// Optimistic: PGM instantly becomes what PST was.
+				if (self.DATA.pvw_source !== undefined) {
+					self.DATA.pgm_source = self.DATA.pvw_source
+					self.checkFeedbacks('bus_tally', 'inputTally')
+					self.checkVariables()
+				}
+				self.sendRawCommand('DTH:08001E,01;', 'high')
+				self.getAuxSources()
+			},
+		}
+
+		actions.auto_take = {
+			name: 'AUTO Take',
+			options: [],
+			callback: function () {
+				self.sendRawCommand('DTH:08001F,01;', 'high')
+				// State updates via polling — transition time is unknown from the module side.
+				self.getAuxSources()
+			},
+		}
+
 		actions.press_and_release_switch = {
 			name: 'Press and Release Panel Switch',
 			options: [

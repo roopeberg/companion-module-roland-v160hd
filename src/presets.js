@@ -866,6 +866,11 @@ module.exports = {
 				name: `Still ${i + 1}`,
 				label: `$(self:label_still_${i + 1})`,
 			})),
+			...Array.from({ length: 20 }, (_, i) => ({
+				intId: 0x20 + i,
+				name: `INPUT ${i + 1}`,
+				label: `INPUT ${i + 1}`,
+			})),
 		]
 
 		const dskIntIds = [

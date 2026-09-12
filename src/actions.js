@@ -1557,7 +1557,7 @@ module.exports = {
 		}
 
 		actions.set_pinp_source = {
-			name: 'Set PnP & Key Source',
+			name: 'Set PnP & Key Source (Deprecated — use PnP & Key Set Source)',
 			options: [
 				{
 					type: 'dropdown',

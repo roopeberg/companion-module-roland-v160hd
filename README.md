@@ -10,7 +10,7 @@ Bitfocus Companion module for the **Roland V-160HD** HD video switcher.
 
 ## Features
 
-- **PGM / PVW / AUX 1–3** source selection with per-bus tally feedback (each bus tracked independently)
+- **PGM / PVW / AUX 1–3** source selection with per-bus tally feedback (each bus tracked independently); **Multi-tally** preset buttons showing all bus states simultaneously on a single button
 - **PiP & Key (1–4):** source, type, shape, border, position, size, crop, zoom, level
 - **DSK (1–2):** key/fill source, type, level, gain, mix level
 - **Freeze:** global on/off, freeze type (All / Select), and per-input freeze select for HDMI 1–8 and SDI 1–8
@@ -97,6 +97,8 @@ This fork extends and fixes the [original Bitfocus module](https://github.com/bi
 | Feature | Details |
 |---|---|
 | Per-bus tally | PGM, PVW, and AUX 1–3 each have independent tally feedback. The original had no PGM/PVW tracking. |
+| Multi-tally buttons | New preset type that shows PGM, PVW, and all three AUX states on a single button. PGM active fills the button red, PVW green; each AUX bus lights a dedicated strip at the bottom. Source type is indicated by a colour bar at the top (HDMI = blue, SDI = orange, Still = purple, XPT = teal). |
+| Type-bar styling | All source preset buttons now show a 5 px colour bar at the top indicating the input type. Per-bus buttons use circle tally indicators (top-right corners); cross-bus states are shown alongside so one glance shows the full tally picture. |
 | Full freeze select | Control and monitor per-input freeze state for all 18 inputs (HDMI 1–8, SDI 1–8). Original only exposed global freeze on/off. |
 | Capture / Apply / Snapshot | Save and restore complete PiP 1–4 and DSK 1–2 configurations as JSON snapshots on disk. |
 | Memory presets | Preset buttons auto-labelled with slot names polled from the device. |

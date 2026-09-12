@@ -37,7 +37,6 @@ class v160Instance extends InstanceBase {
 		this.VERSION = ''
 
 		this.freeze_select_mode = false
-		this.pipSourceDataLoaded = false
 
 		this._highQueue = []
 		this._lowQueue = []
@@ -71,6 +70,16 @@ class v160Instance extends InstanceBase {
 			}
 
 			clearInterval(this.INTERVAL)
+
+			if (this._pressTimer !== undefined) {
+				clearTimeout(this._pressTimer)
+				this._pressTimer = undefined
+			}
+
+			if (this._feedbackDebounce !== undefined) {
+				clearTimeout(this._feedbackDebounce)
+				this._feedbackDebounce = undefined
+			}
 
 			this.log('debug', 'destroy')
 		} catch (error) {

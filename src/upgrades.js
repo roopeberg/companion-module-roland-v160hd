@@ -1,13 +1,8 @@
+const { EmptyUpgradeScript } = require('@companion-module/base')
+
 module.exports = [
 	// v0 — placeholder
-	function (_context, _props) {
-		return {
-			updatedConfig: null,
-			updatedSecrets: null,
-			updatedActions: [],
-			updatedFeedbacks: [],
-		}
-	},
+	EmptyUpgradeScript,
 	// v1 — migrate plaintext password config field to secrets
 	function (_context, props) {
 		const config = props.config ?? {}

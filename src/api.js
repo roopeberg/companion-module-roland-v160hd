@@ -206,7 +206,6 @@ module.exports = {
 			self.getOutputData()
 			self.getAuxLinkData()
 			self.getTransitionData()
-			self.getSourceLabels()
 		}
 	},
 
@@ -300,8 +299,8 @@ module.exports = {
 		self.sendRawCommand('RQH:020154,000003;')
 	},
 
-	// Read LABEL EDIT area (02H 10H-2FH 00H-07H): HDMI 1-8, SDI 1-8, Still 1-16.
-	// Each label is 8 ASCII chars. Read all 32 labels to the low-priority queue.
+	// Read LABEL EDIT area: HDMI IN 1-8 (0x10-0x17), SDI IN 1-8 (0x18-0x1F),
+	// Still 1-16 (0x20-0x2F), and bus labels PGM/SubPGM/PVW/AUX1-3/DSK1-2Src.
 	getSourceLabels: function () {
 		let self = this
 		for (let i = 0; i < 8; i++) {
@@ -314,6 +313,11 @@ module.exports = {
 		}
 		for (let i = 0; i < 16; i++) {
 			const hex = (0x20 + i).toString(16).toUpperCase().padStart(2, '0')
+			self.sendRawCommand(`RQH:02${hex}00,000008;`)
+		}
+		// Bus labels: PGM=0x30, Sub PGM=0x31, PVW=0x32, AUX1=0x33, AUX2=0x3A, AUX3=0x3B, DSK1 Src=0x3C, DSK2 Src=0x3D
+		for (const addr of [0x30, 0x31, 0x32, 0x33, 0x3a, 0x3b, 0x3c, 0x3d]) {
+			const hex = addr.toString(16).toUpperCase().padStart(2, '0')
 			self.sendRawCommand(`RQH:02${hex}00,000008;`)
 		}
 	},
@@ -416,6 +420,7 @@ module.exports = {
 			self.sendRawCommand('VER') //request version info
 			self.startInterval() //request some states
 			self.subscribeToTally() //request tally changes
+			self.getSourceLabels() //load source labels once on connect regardless of polling setting
 		} else if (data.trim().startsWith('ERR:')) {
 			const code = data.trim()
 			const messages = {
@@ -609,30 +614,38 @@ module.exports = {
 										}
 									}
 
-									// Source labels: 02H (10H-2FH) 00H — HDMI 1-8, SDI 1-8, Still 1-16
-								if (param1 === '02') {
-									const p2num = parseInt(param2, 16)
-									if (p2num >= 0x10 && p2num <= 0x2F && param3 === '00') {
-										const nameBlock = self._parseHexBlock(value, 8)
-										if (nameBlock) {
-											const displayLabel = nameBlock
-												.map((b) => String.fromCharCode(parseInt(b, 16)))
-												.join('')
-												.replace(/\0/g, '')
-												.trimEnd()
-											let varKey
-											if (p2num <= 0x17) varKey = `label_hdmi_${p2num - 0x10 + 1}`
-											else if (p2num <= 0x1f) varKey = `label_sdi_${p2num - 0x18 + 1}`
-											else varKey = `label_still_${p2num - 0x20 + 1}`
-											if (displayLabel.length > 0) {
-												self.setVariableValues({ [varKey]: displayLabel })
+									// Source labels: LABEL EDIT area (02H 10H-3DH 00H)
+									if (param1 === '02' && param3 === '00') {
+										const p2num = parseInt(param2, 16)
+										let varKey = null
+										if (p2num >= 0x10 && p2num <= 0x17) varKey = `label_hdmi_${p2num - 0x10 + 1}`
+										else if (p2num >= 0x18 && p2num <= 0x1f) varKey = `label_sdi_${p2num - 0x18 + 1}`
+										else if (p2num >= 0x20 && p2num <= 0x2f) varKey = `label_still_${p2num - 0x20 + 1}`
+										else if (p2num === 0x30) varKey = 'label_pgm'
+										else if (p2num === 0x31) varKey = 'label_subpgm'
+										else if (p2num === 0x32) varKey = 'label_pvw'
+										else if (p2num === 0x33) varKey = 'label_aux1'
+										else if (p2num === 0x3a) varKey = 'label_aux2'
+										else if (p2num === 0x3b) varKey = 'label_aux3'
+										else if (p2num === 0x3c) varKey = 'label_dsk1src'
+										else if (p2num === 0x3d) varKey = 'label_dsk2src'
+										if (varKey !== null) {
+											const nameBlock = self._parseHexBlock(value, 8)
+											if (nameBlock) {
+												const displayLabel = nameBlock
+													.map((b) => String.fromCharCode(parseInt(b, 16)))
+													.join('')
+													.replace(/\0/g, '')
+													.trimEnd()
+												if (displayLabel.length > 0) {
+													self.setVariableValues({ [varKey]: displayLabel })
+												}
+												self.logVerbose(`Received source label ${varKey}: "${displayLabel}"`)
 											}
-											self.logVerbose(`Received source label ${varKey}: "${displayLabel}"`)
 										}
 									}
-								}
 
-								if (param1 == '01' && param2 == '22' && param3 == '03') {
+									if (param1 == '01' && param2 == '22' && param3 == '03') {
 										//aux 1 mute
 										self.DATA.aux1mute = value
 										self.logVerbose('Received Aux 1 Mute: ' + value)

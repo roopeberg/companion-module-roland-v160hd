@@ -133,6 +133,14 @@ module.exports = {
 		for (let i = 1; i <= 16; i++) {
 			variables[`label_still_${i}`] = { name: `Still ${i} Label` }
 		}
+		variables.label_pgm = { name: 'PGM Bus Label' }
+		variables.label_subpgm = { name: 'Sub PGM Bus Label' }
+		variables.label_pvw = { name: 'PVW Bus Label' }
+		variables.label_aux1 = { name: 'AUX 1 Bus Label' }
+		variables.label_aux2 = { name: 'AUX 2 Bus Label' }
+		variables.label_aux3 = { name: 'AUX 3 Bus Label' }
+		variables.label_dsk1src = { name: 'DSK 1 Source Label' }
+		variables.label_dsk2src = { name: 'DSK 2 Source Label' }
 
 		//memory names
 		for (let i = 1; i <= 30; i++) {
@@ -154,6 +162,14 @@ module.exports = {
 		for (let i = 1; i <= 16; i++) {
 			labelDefaults[`label_still_${i}`] = `STILL ${i}`
 		}
+		labelDefaults.label_pgm = 'PGM'
+		labelDefaults.label_subpgm = 'SUB PGM'
+		labelDefaults.label_pvw = 'PVW'
+		labelDefaults.label_aux1 = 'AUX 1'
+		labelDefaults.label_aux2 = 'AUX 2'
+		labelDefaults.label_aux3 = 'AUX 3'
+		labelDefaults.label_dsk1src = 'DSK 1 SRC'
+		labelDefaults.label_dsk2src = 'DSK 2 SRC'
 		self.setVariableValues(labelDefaults)
 	},
 

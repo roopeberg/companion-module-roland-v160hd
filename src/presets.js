@@ -5,6 +5,7 @@ module.exports = {
 		let self = this
 
 		const WHITE = combineRgb(255, 255, 255)
+		const BLACK = combineRgb(0, 0, 0)
 		const RED = combineRgb(204, 0, 0)
 		const GREEN = combineRgb(0, 180, 0)
 		const AMBER = combineRgb(210, 120, 0)
@@ -23,6 +24,18 @@ module.exports = {
 		const TYPE_SDI = combineRgb(212, 96, 0)
 		const TYPE_STILL = combineRgb(128, 32, 200)
 		const TYPE_XPT = combineRgb(0, 160, 128)
+
+		// Dim versions of bus colors — visible hint when inactive
+		const DIM_AMBER = combineRgb(45, 22, 0)
+		const DIM_CYAN_AUX = combineRgb(0, 32, 42)
+		const DIM_VIOLET = combineRgb(34, 0, 42)
+		const DIM_RED = combineRgb(52, 5, 5)
+		const DIM_GREEN = combineRgb(5, 42, 5)
+
+		// Opacity for the black overlay that dims the bus-colour background.
+		// 0 = fully transparent (active), 80 = mostly opaque (inactive dim glow).
+		const OVERLAY_INACTIVE = 80
+		const OVERLAY_ACTIVE = 0
 
 		const FONT_SIZE = 30
 
@@ -65,16 +78,6 @@ module.exports = {
 			]
 		}
 
-		function borderOverride(color) {
-			return [
-				{
-					elementId: 'border',
-					elementProperty: 'color',
-					override: { isExpression: false, value: color },
-				},
-			]
-		}
-
 		function dotOverride(id, color) {
 			return [
 				{
@@ -85,28 +88,45 @@ module.exports = {
 			]
 		}
 
-		// Per-bus source button: type bar (top) + circle tally dots (top-right)
-		// + source name (center) + AUX strips (bottom) + border feedback layer.
-		function sourceBtn(sourceLabel, busLabel, busLabelColor, typeColor) {
+		function opacityOverride(id, opacity) {
 			return [
 				{
+					elementId: id,
+					elementProperty: 'opacity',
+					override: { isExpression: false, value: opacity },
+				},
+			]
+		}
+
+		// Per-bus source button.
+		// busColor: the full-brightness bus colour used as the background.
+		// The black overlay dims it to a subtle glow when inactive.
+		// Primary feedback removes the overlay (opacity → 0) to reveal the full colour.
+		// Secondary indicators (circles, aux strips) start at dim colours and brighten via feedback.
+		function sourceBtn(sourceLabel, busLabel, busLabelColor, typeColor, busColor) {
+			return [
+				// Full-brightness bus colour fills the button background.
+				{
 					type: 'box',
-					id: 'border',
+					id: 'bg',
 					x: 0,
 					y: 0,
 					width: 100,
 					height: 100,
-					color: DARK,
+					color: busColor,
 				},
+				// Black overlay dims the bg to a subtle glow when inactive.
 				{
 					type: 'box',
-					id: 'bg',
-					x: 3,
-					y: 3,
-					width: 94,
-					height: 94,
-					color: DARK,
+					id: 'overlay',
+					x: 0,
+					y: 0,
+					width: 100,
+					height: 100,
+					color: BLACK,
+					opacity: OVERLAY_INACTIVE,
 				},
+				// Source-type colour bar (above overlay — always fully visible).
 				{
 					type: 'box',
 					id: 'type_bar',
@@ -130,6 +150,7 @@ module.exports = {
 					halign: 'left',
 					valign: 'top',
 				},
+				// PGM / PVW tally circles — dim by default, brightened by secondary feedbacks.
 				{
 					type: 'circle',
 					id: 'pgm_dot',
@@ -137,7 +158,7 @@ module.exports = {
 					y: 6,
 					width: 10,
 					height: 10,
-					color: DARK,
+					color: DIM_RED,
 				},
 				{
 					type: 'circle',
@@ -146,7 +167,7 @@ module.exports = {
 					y: 6,
 					width: 10,
 					height: 10,
-					color: DARK,
+					color: DIM_GREEN,
 				},
 				{
 					type: 'text',
@@ -162,6 +183,7 @@ module.exports = {
 					halign: 'center',
 					valign: 'center',
 				},
+				// AUX strips — dim bus colour by default, brightened by secondary feedbacks.
 				{
 					type: 'box',
 					id: 'dot_aux1',
@@ -169,7 +191,7 @@ module.exports = {
 					y: 87,
 					width: 29,
 					height: 10,
-					color: DARK,
+					color: DIM_AMBER,
 				},
 				{
 					type: 'box',
@@ -178,7 +200,7 @@ module.exports = {
 					y: 87,
 					width: 29,
 					height: 10,
-					color: DARK,
+					color: DIM_CYAN_AUX,
 				},
 				{
 					type: 'box',
@@ -187,24 +209,17 @@ module.exports = {
 					y: 87,
 					width: 29,
 					height: 10,
-					color: DARK,
+					color: DIM_VIOLET,
 				},
 			]
 		}
 
 		// Multi-tally source button: shows PGM/PVW/AUX1-3 state on one button.
-		// PGM/PVW fill the whole background; AUX buses light the bottom strips.
+		// PGM/PVW each have their own full-size colour layer (opacity 0 by default)
+		// that the feedback reveals.  AUX strips start at dim colour.
 		function sourceBtnMultiTally(sourceLabel, typeColor) {
 			return [
-				{
-					type: 'box',
-					id: 'border',
-					x: 0,
-					y: 0,
-					width: 100,
-					height: 100,
-					color: DARK,
-				},
+				// Base background (dark).
 				{
 					type: 'box',
 					id: 'bg',
@@ -214,6 +229,29 @@ module.exports = {
 					height: 95,
 					color: DARK,
 				},
+				// PGM colour layer — revealed by PGM feedback (opacity: 0 → 100).
+				{
+					type: 'box',
+					id: 'pgm_bg',
+					x: 0,
+					y: 5,
+					width: 100,
+					height: 95,
+					color: RED,
+					opacity: 0,
+				},
+				// PVW colour layer — revealed by PVW feedback (opacity: 0 → 100).
+				{
+					type: 'box',
+					id: 'pvw_bg',
+					x: 0,
+					y: 5,
+					width: 100,
+					height: 95,
+					color: GREEN,
+					opacity: 0,
+				},
+				// Source-type colour bar (always visible).
 				{
 					type: 'box',
 					id: 'type_bar',
@@ -223,6 +261,7 @@ module.exports = {
 					height: 5,
 					color: typeColor ?? DARK,
 				},
+				// PGM / PVW tally circles.
 				{
 					type: 'circle',
 					id: 'pgm_c',
@@ -230,7 +269,7 @@ module.exports = {
 					y: 6,
 					width: 10,
 					height: 10,
-					color: DARK,
+					color: DIM_RED,
 				},
 				{
 					type: 'circle',
@@ -239,7 +278,7 @@ module.exports = {
 					y: 6,
 					width: 10,
 					height: 10,
-					color: DARK,
+					color: DIM_GREEN,
 				},
 				{
 					type: 'text',
@@ -255,6 +294,7 @@ module.exports = {
 					halign: 'center',
 					valign: 'center',
 				},
+				// AUX strips — dim colour by default, brightened when active.
 				{
 					type: 'box',
 					id: 'dot_aux1',
@@ -262,7 +302,7 @@ module.exports = {
 					y: 87,
 					width: 29,
 					height: 10,
-					color: DARK,
+					color: DIM_AMBER,
 				},
 				{
 					type: 'box',
@@ -271,7 +311,7 @@ module.exports = {
 					y: 87,
 					width: 29,
 					height: 10,
-					color: DARK,
+					color: DIM_CYAN_AUX,
 				},
 				{
 					type: 'box',
@@ -280,7 +320,7 @@ module.exports = {
 					y: 87,
 					width: 29,
 					height: 10,
-					color: DARK,
+					color: DIM_VIOLET,
 				},
 			]
 		}
@@ -357,8 +397,19 @@ module.exports = {
 			},
 		]
 
-		// Secondary tally feedbacks for per-bus source buttons (circles + AUX strips).
-		// primaryBus is excluded since it's shown by the border.
+		// Primary feedback for per-bus source buttons: removes the black overlay to
+		// reveal the full bus-colour background.
+		function primaryOverlayFeedback(bus, source) {
+			return {
+				feedbackId: 'bus_tally',
+				options: { bus, source },
+				styleOverrides: opacityOverride('overlay', OVERLAY_ACTIVE),
+			}
+		}
+
+		// Secondary tally feedbacks for per-bus source buttons.
+		// Updates circles (pgm_dot / pvw_dot) and AUX strips from dim to full brightness.
+		// primaryBus is excluded since it drives the overlay instead.
 		function secondaryFeedbacks(source, primaryBus) {
 			const all = [
 				{ bus: 'pgm', elementId: 'pgm_dot', color: RED },
@@ -376,15 +427,15 @@ module.exports = {
 				}))
 		}
 
-		// Multi-tally feedbacks: PGM/PVW fill background, AUX light strips.
+		// Multi-tally feedbacks: PGM/PVW reveal their colour layer; AUX lights strips.
 		function multiTallyFeedbacks(source) {
 			return [
 				{
 					feedbackId: 'bus_tally',
 					options: { bus: 'pgm', source },
 					styleOverrides: [
-						...borderOverride(RED),
-						...dotOverride('bg', RED),
+						// Reveal PGM red layer and show PGM circle bright.
+						...opacityOverride('pgm_bg', 100),
 						...dotOverride('pgm_c', WHITE),
 					],
 				},
@@ -392,8 +443,8 @@ module.exports = {
 					feedbackId: 'bus_tally',
 					options: { bus: 'pvw', source },
 					styleOverrides: [
-						...borderOverride(GREEN),
-						...dotOverride('bg', GREEN),
+						// Reveal PVW green layer (on top of PGM layer) and show PVW circle bright.
+						...opacityOverride('pvw_bg', 100),
 						...dotOverride('pvw_c', WHITE),
 					],
 				},
@@ -547,7 +598,7 @@ module.exports = {
 					presets[id] = {
 						name: `${dest.label}: ${src.label}`,
 						type: 'layered',
-						elements: sourceBtn(src.label, dest.label, dest.labelColor, src.typeColor),
+						elements: sourceBtn(src.label, dest.label, dest.labelColor, src.typeColor, dest.activeColor),
 						steps: [
 							{
 								down: [
@@ -560,11 +611,7 @@ module.exports = {
 							},
 						],
 						feedbacks: [
-							{
-								feedbackId: 'bus_tally',
-								options: { bus: dest.bus, source: src.pgmpvw_id },
-								styleOverrides: borderOverride(dest.activeColor),
-							},
+							primaryOverlayFeedback(dest.bus, src.pgmpvw_id),
 							...secondaryFeedbacks(src.pgmpvw_id, dest.bus),
 						],
 					}
@@ -584,7 +631,7 @@ module.exports = {
 					presets[id] = {
 						name: `${aux.label}: ${src.label}`,
 						type: 'layered',
-						elements: sourceBtn(src.label, aux.label, aux.labelColor, src.typeColor),
+						elements: sourceBtn(src.label, aux.label, aux.labelColor, src.typeColor, aux.activeColor),
 						steps: [
 							{
 								down: [
@@ -597,11 +644,7 @@ module.exports = {
 							},
 						],
 						feedbacks: [
-							{
-								feedbackId: 'bus_tally',
-								options: { bus: aux.bus, source: src.pgmpvw_id },
-								styleOverrides: borderOverride(aux.activeColor),
-							},
+							primaryOverlayFeedback(aux.bus, src.pgmpvw_id),
 							...secondaryFeedbacks(src.pgmpvw_id, aux.bus),
 						],
 					}
@@ -833,7 +876,6 @@ module.exports = {
 		}
 		addSection('dsk_capture_apply', 'DSK Capture / Apply', dskCapIds)
 
-		// DSK source list: integer IDs matching CHOICES_INPUTSASSIGN (0-31)
 		const dskSources = [
 			...Array.from({ length: 8 }, (_, i) => ({
 				intId: i,
@@ -1177,7 +1219,11 @@ module.exports = {
 							feedbackId: 'freeze_input_selected',
 							options: { input: inp.freeze_addr },
 							styleOverrides: [
-								...borderOverride(FREEZE_CYAN),
+								{
+									elementId: 'border',
+									elementProperty: 'color',
+									override: { isExpression: false, value: FREEZE_CYAN },
+								},
 								{
 									elementId: 'label',
 									elementProperty: 'text',

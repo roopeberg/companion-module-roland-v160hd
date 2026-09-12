@@ -42,6 +42,16 @@ module.exports = {
 		{ id: 39, label: 'INPUT 8', shortlabel: 'input8', status: 0 },
 		{ id: 40, label: 'INPUT 9', shortlabel: 'input9', status: 0 },
 		{ id: 41, label: 'INPUT 10', shortlabel: 'input10', status: 0 },
+		{ id: 42, label: 'INPUT 11', shortlabel: 'input11', status: 0 },
+		{ id: 43, label: 'INPUT 12', shortlabel: 'input12', status: 0 },
+		{ id: 44, label: 'INPUT 13', shortlabel: 'input13', status: 0 },
+		{ id: 45, label: 'INPUT 14', shortlabel: 'input14', status: 0 },
+		{ id: 46, label: 'INPUT 15', shortlabel: 'input15', status: 0 },
+		{ id: 47, label: 'INPUT 16', shortlabel: 'input16', status: 0 },
+		{ id: 48, label: 'INPUT 17', shortlabel: 'input17', status: 0 },
+		{ id: 49, label: 'INPUT 18', shortlabel: 'input18', status: 0 },
+		{ id: 50, label: 'INPUT 19', shortlabel: 'input19', status: 0 },
+		{ id: 51, label: 'INPUT 20', shortlabel: 'input20', status: 0 },
 	],
 
 	CHOICES_INPUTS: [
@@ -55,6 +65,16 @@ module.exports = {
 		{ id: 7, label: 'Input 8' },
 		{ id: 8, label: 'Input 9' },
 		{ id: 9, label: 'Input 10' },
+		{ id: 36, label: 'Input 11' },
+		{ id: 37, label: 'Input 12' },
+		{ id: 38, label: 'Input 13' },
+		{ id: 39, label: 'Input 14' },
+		{ id: 40, label: 'Input 15' },
+		{ id: 41, label: 'Input 16' },
+		{ id: 42, label: 'Input 17' },
+		{ id: 43, label: 'Input 18' },
+		{ id: 44, label: 'Input 19' },
+		{ id: 45, label: 'Input 20' },
 	],
 
 	CHOICES_INPUTSASSIGN: [

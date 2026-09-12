@@ -316,7 +316,7 @@ module.exports = {
 			tally_id: null,
 			typeColor: TYPE_STILL,
 		}))
-		const XPT_SOURCES = Array.from({ length: 10 }, (_, i) => ({
+		const XPT_SOURCES = Array.from({ length: 20 }, (_, i) => ({
 			label: `INPUT ${i + 1}`,
 			pgmpvw_id: (0x20 + i).toString(16).padStart(2, '0').toUpperCase(),
 			tally_id: 32 + i,

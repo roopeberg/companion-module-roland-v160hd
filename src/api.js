@@ -372,19 +372,30 @@ module.exports = {
 			const hex = i.toString(16).padStart(2, '0').toUpperCase()
 			self.sendRawCommand(`RQH:0000${hex},000001;`)
 		}
+		// INPUT 11–20 use a separate non-contiguous address range (000024–00002D)
+		for (let i = 0; i < 10; i++) {
+			const hex = (0x24 + i).toString(16).padStart(2, '0').toUpperCase()
+			self.sendRawCommand(`RQH:0000${hex},000001;`)
+		}
 	},
 
-	// Resolves an INPUT slot ID (20–29) to the physical source ID stored in
+	// Resolves an INPUT slot ID (0x20–0x33) to the physical source ID stored in
 	// DATA.input_assign_NN. If not yet cached, fires a targeted RQH so the
 	// assignment arrives shortly and triggers a re-resolve via the handler above.
 	resolveInputSource: function (id) {
 		let self = this
 		const val = parseInt(id, 16)
 		if (val >= 0x20 && val <= 0x29) {
+			// INPUT 1–10: slot IDs 0x20–0x29 → register addresses 000000–000009
 			const slotHex = (val - 0x20).toString(16).padStart(2, '0').toUpperCase()
 			const physical = self.DATA[`input_assign_${slotHex}`]
 			if (physical !== undefined) return physical
-			// Not cached yet — request it; response will re-resolve the bus source
+			self.sendRawCommand(`RQH:0000${slotHex},000001;`)
+		} else if (val >= 0x2a && val <= 0x33) {
+			// INPUT 11–20: slot IDs 0x2A–0x33 → register addresses 000024–00002D
+			const slotHex = (val - 0x2a + 0x24).toString(16).padStart(2, '0').toUpperCase()
+			const physical = self.DATA[`input_assign_${slotHex}`]
+			if (physical !== undefined) return physical
 			self.sendRawCommand(`RQH:0000${slotHex},000001;`)
 		}
 		return id
@@ -522,11 +533,17 @@ module.exports = {
 									}
 
 									if (param1 == '00') {
-										if (param2 == '00' && parseInt(param3, 16) <= 9) {
-											//INPUT slot assignment (000000–000009) — re-resolve any bus source pending on this slot
-											self.logVerbose(`Received Input ${parseInt(param3, 16) + 1} Assign: ${value}`)
-											self.DATA[`input_assign_${param3}`] = value
-											const inputId = (parseInt(param3, 16) + 0x20).toString(16).padStart(2, '0').toUpperCase()
+										const p3 = parseInt(param3, 16)
+										const isRange1 = p3 >= 0 && p3 <= 9
+										const isRange2 = p3 >= 0x24 && p3 <= 0x2d
+										if (param2 == '00' && (isRange1 || isRange2)) {
+											//INPUT slot assignment: range1 = 000000–000009, range2 = 000024–00002D
+											const slotNum = isRange1 ? p3 + 1 : p3 - 0x24 + 11
+											self.logVerbose(`Received Input ${slotNum} Assign: ${value}`)
+											self.DATA[`input_assign_${param3.toUpperCase()}`] = value
+											const inputId = isRange1
+												? (p3 + 0x20).toString(16).padStart(2, '0').toUpperCase()
+												: (p3 - 0x24 + 0x2a).toString(16).padStart(2, '0').toUpperCase()
 											const busSources = ['pgm_source', 'pvw_source', 'aux1source', 'aux2source', 'aux3source']
 											for (const key of busSources) {
 												if (self.DATA[key] === inputId) {

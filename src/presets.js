@@ -612,10 +612,7 @@ module.exports = {
 								up: [],
 							},
 						],
-						feedbacks: [
-							primaryOverlayFeedback(aux.bus, src.pgmpvw_id),
-							...secondaryFeedbacks(src.pgmpvw_id, aux.bus),
-						],
+						feedbacks: [primaryOverlayFeedback(aux.bus, src.pgmpvw_id), ...secondaryFeedbacks(src.pgmpvw_id, aux.bus)],
 					}
 					sectionIds.push(id)
 				}
@@ -731,17 +728,25 @@ module.exports = {
 		}
 		addSection('pip_capture_apply', 'PiP Capture / Apply', pipCapIds)
 
-		// PiP Source presets (HDMI 1-8, SDI 1-8, Input 1-10)
+		// PiP Source presets (HDMI 1-8, SDI 1-8, Still 1-16, Input 1-20)
 		const pipSources = [
 			...Array.from({ length: 8 }, (_, i) => ({
-				label: `H${i + 1}`,
+				name: `HDMI IN ${i + 1}`,
+				label: `$(self:label_hdmi_${i + 1})`,
 				id: i.toString(16).padStart(2, '0').toUpperCase(),
 			})),
 			...Array.from({ length: 8 }, (_, i) => ({
-				label: `S${i + 1}`,
+				name: `SDI IN ${i + 1}`,
+				label: `$(self:label_sdi_${i + 1})`,
 				id: (8 + i).toString(16).padStart(2, '0').toUpperCase(),
 			})),
-			...Array.from({ length: 10 }, (_, i) => ({
+			...Array.from({ length: 16 }, (_, i) => ({
+				name: `Still ${i + 1}`,
+				label: `$(self:label_still_${i + 1})`,
+				id: (0x10 + i).toString(16).padStart(2, '0').toUpperCase(),
+			})),
+			...Array.from({ length: 20 }, (_, i) => ({
+				name: `INPUT ${i + 1}`,
 				label: `IN${i + 1}`,
 				id: (0x20 + i).toString(16).padStart(2, '0').toUpperCase(),
 			})),
@@ -751,7 +756,7 @@ module.exports = {
 			const sectionIds = []
 			for (const src of pipSources) {
 				const id = `${sectionId}_${src.id}`
-				presets[id] = preset(`PiP ${p.n} Source: ${src.label}`, src.label, NAVY, 'pnpkey_setsource', {
+				presets[id] = preset(`PiP ${p.n} Source: ${src.name}`, src.label, NAVY, 'pnpkey_setsource', {
 					pinp: p.id,
 					source: src.id,
 				})
@@ -848,15 +853,18 @@ module.exports = {
 		const dskSources = [
 			...Array.from({ length: 8 }, (_, i) => ({
 				intId: i,
-				label: `H${i + 1}`,
+				name: `HDMI IN ${i + 1}`,
+				label: `$(self:label_hdmi_${i + 1})`,
 			})),
 			...Array.from({ length: 8 }, (_, i) => ({
 				intId: 8 + i,
-				label: `S${i + 1}`,
+				name: `SDI IN ${i + 1}`,
+				label: `$(self:label_sdi_${i + 1})`,
 			})),
 			...Array.from({ length: 16 }, (_, i) => ({
 				intId: 16 + i,
-				label: `St${i + 1}`,
+				name: `Still ${i + 1}`,
+				label: `$(self:label_still_${i + 1})`,
 			})),
 		]
 
@@ -870,7 +878,7 @@ module.exports = {
 			const sectionIds = []
 			for (const src of dskSources) {
 				const id = `${sectionId}_${src.intId}`
-				presets[id] = preset(`DSK ${d.n} Key Src: ${src.label}`, src.label, NAVY, 'set_dsk_key_source', {
+				presets[id] = preset(`DSK ${d.n} Key Src: ${src.name}`, src.label, NAVY, 'set_dsk_key_source', {
 					dsk: d.intId,
 					assign: src.intId,
 				})
@@ -884,7 +892,7 @@ module.exports = {
 			const sectionIds = []
 			for (const src of dskSources) {
 				const id = `${sectionId}_${src.intId}`
-				presets[id] = preset(`DSK ${d.n} Fill Src: ${src.label}`, src.label, NAVY, 'set_dsk_fill_source', {
+				presets[id] = preset(`DSK ${d.n} Fill Src: ${src.name}`, src.label, NAVY, 'set_dsk_fill_source', {
 					dsk: d.intId,
 					assign: src.intId,
 				})
@@ -1092,7 +1100,8 @@ module.exports = {
 			{
 				name: 'HDMI',
 				inputs: Array.from({ length: 8 }, (_, i) => ({
-					label: `HDMI ${i + 1}`,
+					name: `HDMI IN ${i + 1}`,
+					label: `$(self:label_hdmi_${i + 1})`,
 					pvw_id: i.toString(16).padStart(2, '0').toUpperCase(),
 					freeze_addr: (i + 2).toString(16).padStart(2, '0').toUpperCase(),
 				})),
@@ -1100,7 +1109,8 @@ module.exports = {
 			{
 				name: 'SDI',
 				inputs: Array.from({ length: 8 }, (_, i) => ({
-					label: `SDI ${i + 1}`,
+					name: `SDI IN ${i + 1}`,
+					label: `$(self:label_sdi_${i + 1})`,
 					pvw_id: (8 + i).toString(16).padStart(2, '0').toUpperCase(),
 					freeze_addr: (i + 0x0a).toString(16).padStart(2, '0').toUpperCase(),
 				})),
@@ -1113,7 +1123,7 @@ module.exports = {
 			for (const inp of group.inputs) {
 				const id = `${sectionId}_${inp.freeze_addr}`
 				presets[id] = {
-					name: `Freeze Select / PVW: ${inp.label}`,
+					name: `Freeze Select / PVW: ${inp.name}`,
 					type: 'layered',
 					elements: [
 						{

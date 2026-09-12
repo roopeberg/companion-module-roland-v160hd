@@ -291,4 +291,32 @@ describe('setSourceLabel', () => {
 		const dth = inst._rawCmds.find((c) => c.cmd.startsWith('DTH:'))
 		assert.ok(dth.cmd.includes('023A00'), `unexpected address in: ${dth.cmd}`)
 	})
+
+	test('empty string logs warning and sends no DTH command', () => {
+		const inst = makeWriteInstance()
+		inst.setSourceLabel('10', '')
+		assert.ok(
+			inst._warnings.some((w) => w.includes('empty label')),
+			'expected a warning about empty label',
+		)
+		assert.equal(
+			inst._rawCmds.filter((c) => c.cmd.startsWith('DTH:')).length,
+			0,
+			'no DTH write should be sent for empty label',
+		)
+	})
+
+	test('all-whitespace string logs warning and sends no DTH command', () => {
+		const inst = makeWriteInstance()
+		inst.setSourceLabel('10', '   ')
+		assert.ok(
+			inst._warnings.some((w) => w.includes('empty label')),
+			'expected a warning about empty label',
+		)
+		assert.equal(
+			inst._rawCmds.filter((c) => c.cmd.startsWith('DTH:')).length,
+			0,
+			'no DTH write should be sent for all-whitespace label',
+		)
+	})
 })

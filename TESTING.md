@@ -248,7 +248,7 @@ Confirms that Companion correctly resolves which physical source (HDMI, SDI, etc
 
 ## Notes
 
-- **Unit tests**: `npm test` runs 111 automated unit tests across 5 test files:
+- **Unit tests**: `npm test` runs 113 automated unit tests across 5 test files:
   - `test/tcpParser.test.js` — TCP parser: split packets, merged packets, auth prompts, delimiter ordering
   - `test/queue.test.js` — priority queue drain, `_drainBatch`, 20 ms rate limit
   - `test/multibyte.test.js` — multi-byte RQH query helpers, `_parseHexBlock`

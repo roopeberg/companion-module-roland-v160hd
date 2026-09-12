@@ -416,8 +416,8 @@ module.exports = {
 			]
 			for (const dk of dskIds) {
 				const d = self.DATA
-				const keySrcLookup = self.CHOICES_INPUTSASSIGN.find((x) => x.id == parseInt(d[`data_${dk.id}03`], 16))
-				const fillSrcLookup = self.CHOICES_INPUTSASSIGN.find((x) => x.id == parseInt(d[`data_${dk.id}04`], 16))
+				const keySrcLookup = self.CHOICES_DSK_SOURCES.find((x) => x.id == parseInt(d[`data_${dk.id}03`], 16))
+				const fillSrcLookup = self.CHOICES_DSK_SOURCES.find((x) => x.id == parseInt(d[`data_${dk.id}04`], 16))
 				variableObj[`dsk${dk.n}_keySource`] = keySrcLookup ? keySrcLookup.label : (d[`data_${dk.id}03`] ?? '-')
 				variableObj[`dsk${dk.n}_fillSource`] = fillSrcLookup ? fillSrcLookup.label : (d[`data_${dk.id}04`] ?? '-')
 				variableObj[`dsk${dk.n}_type`] = DSK_TYPE_LABELS[d[`data_${dk.id}05`]] ?? d[`data_${dk.id}05`] ?? '-'

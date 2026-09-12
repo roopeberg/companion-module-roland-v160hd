@@ -8,7 +8,14 @@ module.exports = {
 				id: 'setup_info',
 				width: 12,
 				label: 'Information',
-				value: 'This module will connect to a Roland V-160HD. <strong>Note:</strong> The V-160HD only accepts one TCP connection at a time — close any other remote control software (e.g. Roland RCS) before connecting.',
+				value: 'This module will connect to a Roland V-160HD.',
+			},
+			{
+				type: 'static-text',
+				id: 'connection_warning',
+				width: 12,
+				label: ' ',
+				value: '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:8px 12px;color:#856404;">⚠️ <strong>Single connection only:</strong> The V-160HD accepts only one TCP connection at a time. Close any other remote control software (e.g. Roland RCS) before connecting.</div>',
 			},
 			{
 				type: 'static-text',

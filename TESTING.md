@@ -150,6 +150,49 @@ Valid range: 300–30 000 ms. Default when omitted or invalid: 500 ms.
 
 Verified: `self.log('info', 'Sending passcode')` no longer includes the password value.
 
+## ⚠️ #20 — Freeze select mode
+
+Requires polling enabled and Freeze Type set to Select on the device.
+
+1. Press the **Set Freeze** button — the button border and bar should turn cyan (freeze_select_mode_active feedback)
+2. While Set Freeze is active, tap an input button (e.g. HDMI IN 1) — that input's freeze state should toggle
+3. Per-input Freeze Select buttons (HDMI 1–8, SDI 1–8) should show cyan when the input is frozen
+4. Tapping an input button while NOT in Set Freeze mode should select it as the PGM/PVW/AUX source as normal
+
+## ⚠️ #21 — PGM + AUX preset buttons
+
+1. Load the **PGM + AUX** preset section into a page
+2. Select a source on PGM — the corresponding button background should turn red
+3. Select the same source on AUX 1 — the lower-left square of that button should turn red; the number `1` should appear on the square
+4. Select on AUX 2 — middle square; AUX 3 — right square
+5. Remove the source from an AUX — the square should return to dark and the number should disappear
+
+## ⚠️ #22 — `lastmemorynumber` shows 1-indexed slot
+
+1. Recall memory slot 1 on the device
+2. Verify variable `lastmemorynumber` shows `1` (not `0`)
+3. Recall memory slot 30 — variable should show `30` (not `29`)
+4. `memory_active` feedback for slot 1 should be true after step 2
+
+## ⚠️ #23 — ERR:N responses logged
+
+1. Enable verbose logging
+2. Trigger a known error condition (e.g. send an out-of-range value via a custom action)
+3. Companion log should show a descriptive warn-level message (e.g. `Parameter error — value out of range` for ERR:1)
+4. ERR:4 / ERR:5 should log at error level
+
+## ⚠️ #24 — Login lockout guard
+
+1. Configure correct password, connect, verify authenticated
+2. Monitor debug log — `Sending passcode` should appear exactly once per connection
+3. Force a reconnect (disable/re-enable polling) — passcode should be sent exactly once on the new connection
+
+## ⚠️ #25 — Password hidden in Companion UI
+
+1. Open module configuration in Companion
+2. Verify the Password field shows masked input (dots), not plaintext
+3. Open Companion debug log — password value must not appear in any log line
+
 ---
 
 ## Notes

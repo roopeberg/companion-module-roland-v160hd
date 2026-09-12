@@ -41,7 +41,7 @@ module.exports = {
 				regex: Regex.IP,
 			},
 			{
-				type: 'textinput',
+				type: 'secret-text',
 				id: 'password',
 				label: 'Password',
 				width: 6,

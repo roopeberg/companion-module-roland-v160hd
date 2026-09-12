@@ -382,7 +382,7 @@ module.exports = {
 			self._passwordSent = true
 			self.updateStatus(InstanceStatus.Connecting, 'Authenticating')
 			self.log('info', 'Sending passcode')
-			self.socket.send(self.config.password + '\n')
+			self.socket.send((self.secrets?.password ?? '') + '\n')
 		} else if (data.trim() == 'Authentication error.' || data.trim() == 'Wait a moment.') {
 			self.log('error', `Login rejected by device: "${data.trim()}" — check password or wait before reconnecting`)
 			self.updateStatus(InstanceStatus.ConnectionFailure, data.trim())

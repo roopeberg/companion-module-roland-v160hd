@@ -57,8 +57,8 @@ class v160Instance extends InstanceBase {
 		this.selectedCamera = '41' //camera 1 (Roland address)
 	}
 
-	async init(config) {
-		this.configUpdated(config)
+	async init(config, isFirstInit, secrets) {
+		this.configUpdated(config, secrets)
 	}
 	// When module gets deleted
 	async destroy() {
@@ -87,8 +87,9 @@ class v160Instance extends InstanceBase {
 		}
 	}
 
-	async configUpdated(config) {
+	async configUpdated(config, secrets) {
 		this.config = config
+		this.secrets = secrets ?? {}
 
 		this.initActions()
 		this.initFeedbacks()

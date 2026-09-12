@@ -18,7 +18,13 @@ module.exports = {
 		const SAVE_COLOR = combineRgb(180, 80, 0)
 		const LOAD_COLOR = combineRgb(0, 100, 180)
 
-		const FONT_SIZE = 30 // % of element height
+		// Source type accent colors (top bar)
+		const TYPE_HDMI = combineRgb(42, 106, 219)
+		const TYPE_SDI = combineRgb(212, 96, 0)
+		const TYPE_STILL = combineRgb(128, 32, 200)
+		const TYPE_XPT = combineRgb(0, 160, 128)
+
+		const FONT_SIZE = 30
 
 		// Build layered preset elements: background box + centered text label
 		function layeredBtn(text, bgcolor) {
@@ -79,11 +85,9 @@ module.exports = {
 			]
 		}
 
-		// Source button with bus label (top-left) + PGM/PVW dots (top-right)
-		// + AUX1/AUX2/AUX3 squares (bottom thirds) + border feedback layer.
-		// All secondary indicator elements are always included (start DARK);
-		// feedbacks selectively light them up per button type.
-		function sourceBtn(sourceLabel, busLabel, busLabelColor) {
+		// Per-bus source button: type bar (top) + circle tally dots (top-right)
+		// + source name (center) + AUX strips (bottom) + border feedback layer.
+		function sourceBtn(sourceLabel, busLabel, busLabelColor, typeColor) {
 			return [
 				{
 					type: 'box',
@@ -104,10 +108,19 @@ module.exports = {
 					color: DARK,
 				},
 				{
+					type: 'box',
+					id: 'type_bar',
+					x: 0,
+					y: 0,
+					width: 100,
+					height: 5,
+					color: typeColor ?? DARK,
+				},
+				{
 					type: 'text',
 					id: 'bus_label',
 					x: 4,
-					y: 4,
+					y: 7,
 					width: 68,
 					height: 14,
 					text: busLabel,
@@ -118,21 +131,114 @@ module.exports = {
 					valign: 'top',
 				},
 				{
-					type: 'box',
+					type: 'circle',
 					id: 'pgm_dot',
-					x: 74,
-					y: 5,
+					x: 75,
+					y: 6,
 					width: 10,
-					height: 11,
+					height: 10,
+					color: DARK,
+				},
+				{
+					type: 'circle',
+					id: 'pvw_dot',
+					x: 87,
+					y: 6,
+					width: 10,
+					height: 10,
+					color: DARK,
+				},
+				{
+					type: 'text',
+					id: 'label',
+					x: 3,
+					y: 20,
+					width: 94,
+					height: 65,
+					text: sourceLabel,
+					fontsize: FONT_SIZE,
+					fontsizeAllowShrink: true,
+					color: WHITE,
+					halign: 'center',
+					valign: 'center',
+				},
+				{
+					type: 'box',
+					id: 'dot_aux1',
+					x: 3,
+					y: 87,
+					width: 29,
+					height: 10,
 					color: DARK,
 				},
 				{
 					type: 'box',
-					id: 'pvw_dot',
-					x: 86,
+					id: 'dot_aux2',
+					x: 35,
+					y: 87,
+					width: 29,
+					height: 10,
+					color: DARK,
+				},
+				{
+					type: 'box',
+					id: 'dot_aux3',
+					x: 67,
+					y: 87,
+					width: 29,
+					height: 10,
+					color: DARK,
+				},
+			]
+		}
+
+		// Multi-tally source button: shows PGM/PVW/AUX1-3 state on one button.
+		// PGM/PVW fill the whole background; AUX buses light the bottom strips.
+		function sourceBtnMultiTally(sourceLabel, typeColor) {
+			return [
+				{
+					type: 'box',
+					id: 'border',
+					x: 0,
+					y: 0,
+					width: 100,
+					height: 100,
+					color: DARK,
+				},
+				{
+					type: 'box',
+					id: 'bg',
+					x: 0,
 					y: 5,
+					width: 100,
+					height: 95,
+					color: DARK,
+				},
+				{
+					type: 'box',
+					id: 'type_bar',
+					x: 0,
+					y: 0,
+					width: 100,
+					height: 5,
+					color: typeColor ?? DARK,
+				},
+				{
+					type: 'circle',
+					id: 'pgm_c',
+					x: 75,
+					y: 6,
 					width: 10,
-					height: 11,
+					height: 10,
+					color: DARK,
+				},
+				{
+					type: 'circle',
+					id: 'pvw_c',
+					x: 87,
+					y: 6,
+					width: 10,
+					height: 10,
 					color: DARK,
 				},
 				{
@@ -184,21 +290,25 @@ module.exports = {
 			label: `HDMI ${i + 1}`,
 			pgmpvw_id: i.toString(16).padStart(2, '0').toUpperCase(),
 			tally_id: i,
+			typeColor: TYPE_HDMI,
 		}))
 		const SDI_SOURCES = Array.from({ length: 8 }, (_, i) => ({
 			label: `SDI ${i + 1}`,
 			pgmpvw_id: (8 + i).toString(16).padStart(2, '0').toUpperCase(),
 			tally_id: 8 + i,
+			typeColor: TYPE_SDI,
 		}))
 		const STILL_SOURCES = Array.from({ length: 16 }, (_, i) => ({
 			label: `Still ${i + 1}`,
 			pgmpvw_id: (0x10 + i).toString(16).padStart(2, '0').toUpperCase(),
 			tally_id: null,
+			typeColor: TYPE_STILL,
 		}))
 		const XPT_SOURCES = Array.from({ length: 10 }, (_, i) => ({
 			label: `INPUT ${i + 1}`,
 			pgmpvw_id: (0x20 + i).toString(16).padStart(2, '0').toUpperCase(),
 			tally_id: 32 + i,
+			typeColor: TYPE_XPT,
 		}))
 
 		const PGM_LABEL_COLOR = combineRgb(120, 0, 0)
@@ -247,8 +357,8 @@ module.exports = {
 			},
 		]
 
-		// Secondary tally feedbacks for all source buttons (PGM/PVW dots + AUX1-3 squares).
-		// primaryBus is excluded from secondary feedbacks since it's shown by the border.
+		// Secondary tally feedbacks for per-bus source buttons (circles + AUX strips).
+		// primaryBus is excluded since it's shown by the border.
 		function secondaryFeedbacks(source, primaryBus) {
 			const all = [
 				{ bus: 'pgm', elementId: 'pgm_dot', color: RED },
@@ -265,10 +375,47 @@ module.exports = {
 					styleOverrides: dotOverride(b.elementId, b.color),
 				}))
 		}
-		// PGM source button with full-background PGM tally + AUX squares in bottom third.
-		// Each AUX square is 1/3 button width × 1/3 button height; number (1/2/3) appears
-		// on top of the square in WHITE when that AUX bus has this source — invisible (DARK)
-		// otherwise so the button stays clean. Squares layer over the PGM red background.
+
+		// Multi-tally feedbacks: PGM/PVW fill background, AUX light strips.
+		function multiTallyFeedbacks(source) {
+			return [
+				{
+					feedbackId: 'bus_tally',
+					options: { bus: 'pgm', source },
+					styleOverrides: [
+						...borderOverride(RED),
+						...dotOverride('bg', RED),
+						...dotOverride('pgm_c', WHITE),
+					],
+				},
+				{
+					feedbackId: 'bus_tally',
+					options: { bus: 'pvw', source },
+					styleOverrides: [
+						...borderOverride(GREEN),
+						...dotOverride('bg', GREEN),
+						...dotOverride('pvw_c', WHITE),
+					],
+				},
+				{
+					feedbackId: 'bus_tally',
+					options: { bus: 'aux1', source },
+					styleOverrides: dotOverride('dot_aux1', AMBER),
+				},
+				{
+					feedbackId: 'bus_tally',
+					options: { bus: 'aux2', source },
+					styleOverrides: dotOverride('dot_aux2', CYAN_AUX),
+				},
+				{
+					feedbackId: 'bus_tally',
+					options: { bus: 'aux3', source },
+					styleOverrides: dotOverride('dot_aux3', VIOLET),
+				},
+			]
+		}
+
+		// PGM Multi-AUX source buttons — alternate PGM layout with AUX squares in bottom third.
 		function pgmMultiAuxBtn(sourceLabel) {
 			return [
 				{
@@ -400,7 +547,7 @@ module.exports = {
 					presets[id] = {
 						name: `${dest.label}: ${src.label}`,
 						type: 'layered',
-						elements: sourceBtn(src.label, dest.label, dest.labelColor),
+						elements: sourceBtn(src.label, dest.label, dest.labelColor, src.typeColor),
 						steps: [
 							{
 								down: [
@@ -437,7 +584,7 @@ module.exports = {
 					presets[id] = {
 						name: `${aux.label}: ${src.label}`,
 						type: 'layered',
-						elements: sourceBtn(src.label, aux.label, aux.labelColor),
+						elements: sourceBtn(src.label, aux.label, aux.labelColor, src.typeColor),
 						steps: [
 							{
 								down: [
@@ -464,8 +611,31 @@ module.exports = {
 			}
 		}
 
-		// PGM Multi-AUX source buttons — alternate PGM layout with AUX squares in bottom third.
-		// Exists alongside the standard PGM buttons so operators can choose which style to use.
+		// Multi-tally source buttons — one button per source, shows PGM/PVW/AUX1-3 state.
+		// Press selects PGM.
+		for (const group of sourceGroups) {
+			const sectionId = `mt_${group.name.toLowerCase()}`
+			const sectionIds = []
+			for (const src of group.sources) {
+				const id = `${sectionId}_${src.pgmpvw_id}`
+				presets[id] = {
+					name: `Multi-tally: ${src.label}`,
+					type: 'layered',
+					elements: sourceBtnMultiTally(src.label, src.typeColor),
+					steps: [
+						{
+							down: [{ actionId: 'select_pgm', options: { input: src.pgmpvw_id } }],
+							up: [],
+						},
+					],
+					feedbacks: multiTallyFeedbacks(src.pgmpvw_id),
+				}
+				sectionIds.push(id)
+			}
+			addSection(sectionId, `Multi-tally — ${group.name}`, sectionIds)
+		}
+
+		// PGM Multi-AUX source buttons
 		for (const group of sourceGroups) {
 			const sectionId = `pgm_aux_${group.name.toLowerCase()}`
 			const sectionIds = []
@@ -832,7 +1002,6 @@ module.exports = {
 		const FREEZE_CYAN = combineRgb(0, 180, 200)
 		const FREEZE_TYPE_COLOR = combineRgb(80, 0, 140)
 
-		// Freeze on/off toggle
 		presets['freeze_toggle'] = {
 			name: 'Freeze On/Off',
 			type: 'layered',
@@ -855,7 +1024,6 @@ module.exports = {
 			],
 		}
 
-		// Freeze type All/Select toggle
 		presets['freeze_type'] = {
 			name: 'Freeze Type',
 			type: 'layered',
@@ -889,7 +1057,6 @@ module.exports = {
 			],
 		}
 
-		// Set Freeze modifier — hold to enter freeze select mode
 		presets['freeze_set_mode'] = {
 			name: 'Set Freeze (modifier)',
 			type: 'layered',
@@ -910,8 +1077,6 @@ module.exports = {
 
 		addSection('freeze_controls', 'Freeze Controls', ['freeze_toggle', 'freeze_type', 'freeze_set_mode'])
 
-		// Freeze select input buttons — HDMI 1-8, SDI 1-8
-		// Each button: normal press = PVW select, hold SET FREEZE then press = toggle freeze select
 		const freezeInputGroups = [
 			{
 				name: 'HDMI',
@@ -940,7 +1105,6 @@ module.exports = {
 					name: `Freeze Select / PVW: ${inp.label}`,
 					type: 'layered',
 					elements: [
-						// border: freeze-selected → cyan
 						{
 							type: 'box',
 							id: 'border',
@@ -950,7 +1114,6 @@ module.exports = {
 							height: 100,
 							color: FREEZE_DIM,
 						},
-						// bg: always dark inner
 						{
 							type: 'box',
 							id: 'bg',
@@ -960,7 +1123,6 @@ module.exports = {
 							height: 83,
 							color: FREEZE_DIM,
 						},
-						// pvw_dot: top-right, lights green when PVW active
 						{
 							type: 'box',
 							id: 'pvw_dot',
@@ -970,7 +1132,6 @@ module.exports = {
 							height: 12,
 							color: FREEZE_DIM,
 						},
-						// input name (center of inner area)
 						{
 							type: 'text',
 							id: 'label',
@@ -985,7 +1146,6 @@ module.exports = {
 							halign: 'center',
 							valign: 'center',
 						},
-						// set_mode_bar: bottom strip, lights cyan when SET FREEZE modifier active
 						{
 							type: 'box',
 							id: 'set_mode_bar',
@@ -1008,13 +1168,11 @@ module.exports = {
 						},
 					],
 					feedbacks: [
-						// PVW tally — pvw_dot turns green (independent of other states)
 						{
 							feedbackId: 'bus_tally',
 							options: { bus: 'pvw', source: inp.pvw_id },
 							styleOverrides: dotOverride('pvw_dot', GREEN),
 						},
-						// Freeze-selected — border turns cyan + label gets ❄ prefix
 						{
 							feedbackId: 'freeze_input_selected',
 							options: { input: inp.freeze_addr },
@@ -1027,7 +1185,6 @@ module.exports = {
 								},
 							],
 						},
-						// SET FREEZE mode active — bottom bar turns cyan
 						{
 							feedbackId: 'freeze_select_mode_active',
 							styleOverrides: dotOverride('set_mode_bar', FREEZE_CYAN),
@@ -1048,7 +1205,7 @@ module.exports = {
 		const saveIds = []
 
 		for (let slot = 1; slot <= 30; slot++) {
-			const memId = slot - 1 // 0-indexed for action + feedback
+			const memId = slot - 1
 			const nameVar = `$(roland-v160hd:memoryname_${slot})`
 
 			const loadId = `memory_load_${slot}`

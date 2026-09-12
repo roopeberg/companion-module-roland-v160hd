@@ -89,6 +89,10 @@ module.exports = {
 					clearTimeout(self._pressTimer)
 					self._pressTimer = undefined
 				}
+				if (self._feedbackDebounce !== undefined) {
+					clearTimeout(self._feedbackDebounce)
+					self._feedbackDebounce = undefined
+				}
 				self.updateStatus(InstanceStatus.ConnectionFailure, 'Connection Closed')
 			})
 
@@ -768,9 +772,13 @@ module.exports = {
 					}
 				}
 
-				//now update feedbacks and variables
-				self.checkAllFeedbacks()
-				self.checkVariables()
+				//now update feedbacks and variables (debounced to coalesce poll bursts)
+				if (self._feedbackDebounce !== undefined) clearTimeout(self._feedbackDebounce)
+				self._feedbackDebounce = setTimeout(function () {
+					self._feedbackDebounce = undefined
+					self.checkAllFeedbacks()
+					self.checkVariables()
+				}, 40)
 			} catch (error) {
 				self.log('error', 'Error parsing incoming data: ' + error)
 				self.log('error', 'Data: ' + data)

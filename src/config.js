@@ -85,7 +85,7 @@ module.exports = {
 				label: 'Polling Rate (in ms, 300–30000, default 500)',
 				default: 500,
 				width: 3,
-				isVisibleExpression: 'config.polling === true',
+				isVisibleExpression: 'options.polling === true',
 			},
 			{
 				type: 'static-text',

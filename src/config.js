@@ -82,8 +82,8 @@ module.exports = {
 			{
 				type: 'textinput',
 				id: 'pollingrate',
-				label: 'Polling Rate (in ms, 300–30000, default 500)',
-				default: 500,
+				label: 'Polling Rate (in ms, 300–30000, default 1000)',
+				default: 1000,
 				width: 3,
 			},
 			{

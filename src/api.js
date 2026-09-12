@@ -299,17 +299,15 @@ module.exports = {
 		self.sendRawCommand('RQH:020154,000003;')
 	},
 
-	// Read LABEL EDIT area in 5 bulk queries instead of 40 individual ones.
-	// Each label slot occupies P3=00..07 within a 256-byte P2 block, so
-	// RQH:021000,000800 returns 2048 bytes covering HDMI IN 1-8 (P2 10..17).
-	// The bulk parser in updateData extracts each label at 256-byte strides.
+	// Read all source labels in 2 bulk queries.
+	// P2 0x10-0x33 are contiguous (HDMI 1-8, SDI 1-8, Still 1-16, PGM, SubPGM, PVW, AUX1):
+	//   36 slots × 256 bytes = 9216 bytes = 0x2400
+	// P2 0x34-0x39 are unused; P2 0x3A-0x3D hold AUX2-3 and DSK 1-2 Src:
+	//   4 slots × 256 bytes = 1024 bytes = 0x0400
 	getSourceLabels: function () {
 		let self = this
-		self.sendRawCommand('RQH:021000,000800;') // HDMI IN 1-8  (P2 10-17, 8×256 = 2048 bytes)
-		self.sendRawCommand('RQH:021800,000800;') // SDI IN 1-8   (P2 18-1F, 8×256 = 2048 bytes)
-		self.sendRawCommand('RQH:022000,001000;') // Still 1-16   (P2 20-2F, 16×256 = 4096 bytes)
-		self.sendRawCommand('RQH:023000,000400;') // PGM/SubPGM/PVW/AUX1 (P2 30-33, 4×256 = 1024 bytes)
-		self.sendRawCommand('RQH:023A00,000400;') // AUX2/AUX3/DSK1Src/DSK2Src (P2 3A-3D, 4×256 = 1024 bytes)
+		self.sendRawCommand('RQH:021000,002400;') // HDMI+SDI+Still+PGM+SubPGM+PVW+AUX1 (P2 10-33)
+		self.sendRawCommand('RQH:023A00,000400;') // AUX2/AUX3/DSK1Src/DSK2Src (P2 3A-3D)
 	},
 
 	refreshSourceLabels: function () {

@@ -113,9 +113,8 @@ Expected: auth succeeds, tally and variable values are always correct.
 Fix applied: the parser processes delimiters (`;`, `\n`, auth prompts) in
 occurrence order. Each delimiter type is handled as soon as it is encountered
 rather than in a fixed type priority. Incomplete trailing messages are kept
-in the buffer for the next TCP chunk. 23 automated unit tests cover
-split packets, merged packets, interleaved delimiter types, and auth prompt
-edge cases.
+in the buffer for the next TCP chunk. Automated unit tests cover split packets,
+merged packets, interleaved delimiter types, and auth prompt edge cases.
 
 ## ⚠️ #16 — Memory names displayed correctly
 
@@ -195,9 +194,54 @@ Requires polling enabled and Freeze Type set to Select on the device.
 
 ---
 
+## ⚠️ #26 — Source labels read on connect (polling off)
+
+Verify that all 40 source label variables populate even when polling is disabled.
+
+1. Set label on device: e.g. HDMI IN 1 → "CAM 1"
+2. Disable polling in module config, connect
+3. Variable `label_hdmi_1` should show "CAM 1" within a few seconds
+4. Repeat for SDI IN 1 (`label_sdi_1`), Still 1 (`label_still_1`), PGM (`label_pgm`), AUX 2 (`label_aux2`)
+5. Preset buttons for PGM/PVW/AUX/PiP that reference `$(self:label_hdmi_1)` should show the device label
+
+## ⚠️ #27 — Source labels on preset buttons
+
+1. Change label on the device (HDMI IN 1 → "MAIN CAM")
+2. Press **Refresh Source Labels** action or reconnect
+3. PGM, PVW, AUX, and PiP preset buttons for HDMI IN 1 should update to show "MAIN CAM"
+
+## ⚠️ #28 — Set Device Label write + confirm
+
+1. Set an input label using **Set Device Label** action (e.g. HDMI IN 1 → "TEST")
+2. Module variable `label_hdmi_1` should update immediately (optimistic)
+3. Device display should show "TEST" as the HDMI IN 1 label
+4. Re-read the label from the device (disconnect and reconnect, or press Refresh) — value should still be "TEST"
+5. Test with an 8-character label ("ABCDEFGH") and a label that requires trimming ("TOOLONG!X" → stored as "TOOLONG!")
+
+## ⚠️ #29 — INPUT/XPT 11–20 assignment resolution
+
+Confirms that Companion correctly resolves which physical source (HDMI, SDI, etc.) is assigned to INPUT slots 11–20.
+
+1. On the device, assign INPUT 11 slot to HDMI IN 3 via the panel "Input Assign" screen
+2. Connect Companion (or reconnect)
+3. Set PGM source to INPUT 11 from Companion (using a preset button or **Select PGM** action)
+4. The device PGM bus should show HDMI IN 3
+5. The `pgm_source` variable and PGM tally feedback should reflect HDMI IN 3, not INPUT 11 (raw slot id `2A`)
+6. Repeat for INPUT 20
+
+## ⚠️ #30 — Set Device Label: non-printable / long input
+
+1. Set label to a string longer than 8 characters — only the first 8 should be written and stored
+2. Set label containing a tab or control character — it should be silently replaced with a space
+3. Set label to an empty string — module should log a warning; no write should be sent
+
+---
+
 ## Notes
 
-- **Unit tests**: `npm test` runs 23 automated tests for the TCP parser
-  (`test/tcpParser.test.js`), covering split packets, merged packets, auth prompts,
-  interleaved message types, and delimiter-ordering edge cases.
-  Snapshot round-trips and live-device protocol flows still require manual testing.
+- **Unit tests**: `npm test` runs 68 automated unit tests across 4 test files:
+  - `test/tcpParser.test.js` — TCP parser: split packets, merged packets, auth prompts, delimiter ordering
+  - `test/api.test.js` — protocol helpers: `_parseHexBlock`, priority queue drain, `_drainBatch`
+  - `test/sourcelabels.test.js` — label address mapping, ASCII decoding, invalid responses, write/readback
+  - `test/inputassign.test.js` — INPUT/XPT 1–20: address queries, slot→register mapping, updateData handler
+- Snapshot round-trips and all live-device protocol flows still require manual testing per the checklist above.

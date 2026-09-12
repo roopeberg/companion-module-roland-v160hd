@@ -299,15 +299,28 @@ module.exports = {
 		self.sendRawCommand('RQH:020154,000003;')
 	},
 
-	// Read all source labels in 2 bulk queries.
-	// P2 0x10-0x33 are contiguous (HDMI 1-8, SDI 1-8, Still 1-16, PGM, SubPGM, PVW, AUX1):
-	//   36 slots × 256 bytes = 9216 bytes = 0x2400
-	// P2 0x34-0x39 are unused; P2 0x3A-0x3D hold AUX2-3 and DSK 1-2 Src:
-	//   4 slots × 256 bytes = 1024 bytes = 0x0400
+	// Read all 40 source labels as individual 8-byte RQH queries (one per P2 slot).
+	// Roland's address space is 7-bit per dimension (P3 = 00–7F = 128 bytes per P2 block),
+	// making safe bulk-read strides hardware-specific and difficult to verify without a device.
+	// Individual queries are unambiguous and confirmed working; re-optimise after hardware testing.
 	getSourceLabels: function () {
 		let self = this
-		self.sendRawCommand('RQH:021000,002400;') // HDMI+SDI+Still+PGM+SubPGM+PVW+AUX1 (P2 10-33)
-		self.sendRawCommand('RQH:023A00,000400;') // AUX2/AUX3/DSK1Src/DSK2Src (P2 3A-3D)
+		const LABEL_P2_ADDRS = [
+			// HDMI IN 1-8
+			0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+			// SDI IN 1-8
+			0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+			// Still 1-16
+			0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+			// PGM, Sub PGM, PVW, AUX 1
+			0x30, 0x31, 0x32, 0x33,
+			// AUX 2, AUX 3, DSK 1 Src, DSK 2 Src
+			0x3a, 0x3b, 0x3c, 0x3d,
+		]
+		for (const p2 of LABEL_P2_ADDRS) {
+			const hex = p2.toString(16).padStart(2, '0').toUpperCase()
+			self.sendRawCommand(`RQH:02${hex}00,000008;`)
+		}
 	},
 
 	refreshSourceLabels: function () {
@@ -670,42 +683,34 @@ module.exports = {
 										}
 									}
 
-									// Source labels: LABEL EDIT area (02H 10H-3DH 00H).
-									// Single-label: device echo / write confirm (value = 16 hex chars = 8 bytes).
-									// Bulk read: our RQH bulk query returns N×256-byte blocks (N×512 hex chars);
-									//   each block's first 16 hex chars hold the label, rest is padding.
+									// Source labels: LABEL EDIT area (02H xxH 00H), 8 ASCII bytes per slot.
+									// Matches both getSourceLabels individual reads and setSourceLabel write confirms.
 									if (param1 === '02' && param3 === '00') {
-										const p2start = parseInt(param2, 16)
-										const isBulk = value.length > 16 && value.length % 512 === 0
-										const count = isBulk ? value.length / 512 : 1
-										for (let li = 0; li < count; li++) {
-											const p2num = p2start + li
-											let varKey = null
-											if (p2num >= 0x10 && p2num <= 0x17) varKey = `label_hdmi_${p2num - 0x10 + 1}`
-											else if (p2num >= 0x18 && p2num <= 0x1f) varKey = `label_sdi_${p2num - 0x18 + 1}`
-											else if (p2num >= 0x20 && p2num <= 0x2f) varKey = `label_still_${p2num - 0x20 + 1}`
-											else if (p2num === 0x30) varKey = 'label_pgm'
-											else if (p2num === 0x31) varKey = 'label_subpgm'
-											else if (p2num === 0x32) varKey = 'label_pvw'
-											else if (p2num === 0x33) varKey = 'label_aux1'
-											else if (p2num === 0x3a) varKey = 'label_aux2'
-											else if (p2num === 0x3b) varKey = 'label_aux3'
-											else if (p2num === 0x3c) varKey = 'label_dsk1src'
-											else if (p2num === 0x3d) varKey = 'label_dsk2src'
-											if (varKey !== null) {
-												const slice = value.substring(li * 512, li * 512 + 16)
-												const nameBlock = self._parseHexBlock(slice, 8)
-												if (nameBlock) {
-													const displayLabel = nameBlock
-														.map((b) => String.fromCharCode(parseInt(b, 16)))
-														.join('')
-														.replace(/\0/g, '')
-														.trimEnd()
-													if (displayLabel.length > 0) {
-														self.setVariableValues({ [varKey]: displayLabel })
-													}
-													self.logVerbose(`Received source label ${varKey}: "${displayLabel}"`)
+										const p2num = parseInt(param2, 16)
+										let varKey = null
+										if (p2num >= 0x10 && p2num <= 0x17) varKey = `label_hdmi_${p2num - 0x10 + 1}`
+										else if (p2num >= 0x18 && p2num <= 0x1f) varKey = `label_sdi_${p2num - 0x18 + 1}`
+										else if (p2num >= 0x20 && p2num <= 0x2f) varKey = `label_still_${p2num - 0x20 + 1}`
+										else if (p2num === 0x30) varKey = 'label_pgm'
+										else if (p2num === 0x31) varKey = 'label_subpgm'
+										else if (p2num === 0x32) varKey = 'label_pvw'
+										else if (p2num === 0x33) varKey = 'label_aux1'
+										else if (p2num === 0x3a) varKey = 'label_aux2'
+										else if (p2num === 0x3b) varKey = 'label_aux3'
+										else if (p2num === 0x3c) varKey = 'label_dsk1src'
+										else if (p2num === 0x3d) varKey = 'label_dsk2src'
+										if (varKey !== null) {
+											const nameBlock = self._parseHexBlock(value, 8)
+											if (nameBlock) {
+												const displayLabel = nameBlock
+													.map((b) => String.fromCharCode(parseInt(b, 16)))
+													.join('')
+													.replace(/\0/g, '')
+													.trimEnd()
+												if (displayLabel.length > 0) {
+													self.setVariableValues({ [varKey]: displayLabel })
 												}
+												self.logVerbose(`Received source label ${varKey}: "${displayLabel}"`)
 											}
 										}
 									}

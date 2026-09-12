@@ -11,6 +11,8 @@ Bitfocus Companion module for the **Roland V-160HD** HD video switcher.
 ## Features
 
 - **PGM / PVW / AUX 1–3** source selection with per-bus tally feedback (each bus tracked independently); **Multi-tally** preset buttons showing all bus states simultaneously on a single button
+- **INPUT/XPT 1–20** — all 20 logical input slots are available as PGM, PVW, and AUX sources (see [INPUT/XPT and panel modes](#inputxpt-slots-and-panel-operation-modes))
+- **Source label variables** — device-side labels (HDMI 1–8, SDI 1–8, Still 1–16, PGM, Sub PGM, PVW, AUX 1–3, DSK 1–2 Src) are read at connect and shown on preset buttons automatically; labels can be written from Companion with **Set Device Label**
 - **PiP & Key (1–4):** source, type, shape, border, position, size, crop, zoom, level
 - **DSK (1–2):** key/fill source, type, level, gain, mix level
 - **Freeze:** global on/off, freeze type (All / Select), and per-input freeze select for HDMI 1–8 and SDI 1–8
@@ -21,6 +23,18 @@ Bitfocus Companion module for the **Roland V-160HD** HD video switcher.
 - **Output / input assignment**
 - **Transition** type, mix, and wipe control
 - **Optimistic updates** — tally, freeze, and source state reflected immediately on button press without waiting for the next poll
+
+## INPUT/XPT slots and panel operation modes
+
+The V-160HD has two rows of 10 buttons on the hardware panel, giving 20 logical INPUT/XPT slots. Companion exposes all 20 for PGM, PVW, AUX, and PiP source selection. Which physical inputs are routed to which slots depends on the **Panel Operation mode** set on the switcher itself:
+
+| Panel mode | PGM/A row | PST/B row | Notes |
+|---|---|---|---|
+| **PGM/PST(10)** | INPUT 1–10 → PGM | INPUT 1–10 → PVW | Default mode; each row selects the same 10 sources for its bus |
+| **PGM/PST(20)** | INPUT 1–10 → PGM | INPUT 11–20 → PGM | All 20 slots select PGM; PVW controlled separately |
+| **PGM(10)/AUX** | INPUT 1–10 → PGM | INPUT 1–10 → AUX | PST row switches an AUX bus instead |
+
+Companion uses the protocol slot IDs (`0x20`–`0x33`) for PGM/PVW selection and the assignment registers (`000000`–`000009`, `000024`–`00002D`) to resolve which physical source (HDMI, SDI, etc.) each slot is mapped to. The panel mode does **not** change which slot IDs are available in Companion — the preset labels simply reflect whatever the operator has assigned to each slot on the device.
 
 ## Configuration
 
@@ -99,7 +113,10 @@ This fork extends and fixes the [original Bitfocus module](https://github.com/bi
 | Per-bus tally | PGM, PVW, and AUX 1–3 each have independent tally feedback. The original had no PGM/PVW tracking. |
 | Multi-tally buttons | New preset type that shows PGM, PVW, and all three AUX states on a single button. PGM active fills the button red, PVW green; each AUX bus lights a dedicated strip at the bottom. Source type is indicated by a colour bar at the top (HDMI = blue, SDI = orange, Still = purple, XPT = teal). |
 | Type-bar styling | All source preset buttons now show a 5 px colour bar at the top indicating the input type. Per-bus buttons use circle tally indicators (top-right corners); cross-bus states are shown alongside so one glance shows the full tally picture. |
+| INPUT/XPT 1–20 | All 20 logical input slots exposed for PGM, PVW, AUX, and PiP source selection. Original supported only 10. Assignment registers for slots 11–20 (`000024`–`00002D`) are queried separately at connect. |
 | Full freeze select | Control and monitor per-input freeze state for all 18 inputs (HDMI 1–8, SDI 1–8). Original only exposed global freeze on/off. |
+| Source label variables | Device-side labels read at connect for all 40 label slots. Variables `label_hdmi_1`–`label_hdmi_8`, `label_sdi_1`–`label_sdi_8`, `label_still_1`–`label_still_16`, `label_pgm`, `label_subpgm`, `label_pvw`, `label_aux1`–`label_aux3`, `label_dsk1src`, `label_dsk2src`. Preset button text updates automatically when a label changes on the device. |
+| Set Device Label | Write any of the 40 label slots back to the device from Companion. Variable updated optimistically; a readback query confirms the write. |
 | Capture / Apply / Snapshot | Save and restore complete PiP 1–4 and DSK 1–2 configurations as JSON snapshots on disk. |
 | Memory presets | Preset buttons auto-labelled with slot names polled from the device. |
 | Optimistic updates | Button-press state reflected immediately in feedbacks; no waiting for the next poll cycle. |

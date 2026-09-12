@@ -376,8 +376,19 @@ module.exports = {
 			self.sendRawCommand('VER') //request version info
 			self.startInterval() //request some states
 			self.subscribeToTally() //request tally changes
-		} else if (data.trim() == 'ERR:0') {
-			//an error with something that it received
+		} else if (data.trim().startsWith('ERR:')) {
+			const code = data.trim()
+			const messages = {
+				'ERR:0': 'Command error — unknown or malformed command sent',
+				'ERR:1': 'Parameter error — value out of range',
+				'ERR:2': 'Busy — device cannot process command right now',
+				'ERR:3': 'Read-only — attempted to write a read-only register',
+				'ERR:4': 'Access error — not authenticated',
+				'ERR:5': 'Authentication failed — wrong password',
+			}
+			const msg = messages[code] ?? `Unknown error response: ${code}`
+			const level = code === 'ERR:4' || code === 'ERR:5' ? 'error' : 'warn'
+			self.log(level, msg)
 		} else {
 			//do stuff with the data
 			try {

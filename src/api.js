@@ -494,44 +494,32 @@ module.exports = {
 												return item.id == value
 											})
 											self.DATA.pnpkey1source = value
+											self.DATA.pnpkey1sourcename = lookup ? lookup.label : `Unknown (${value})`
 											self.logVerbose('Received PnP/Key 1 Source: ' + value)
-											if (lookup) {
-												self.DATA.pnpkey1sourcename = lookup.label
-												self.logVerbose('PnP/Key 1 Source Name: ' + lookup.label)
-											}
 										} else if (param2 == '1C' && param3 == '02') {
 											//pnp key 2 source
 											let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {
 												return item.id == value
 											})
 											self.DATA.pnpkey2source = value
+											self.DATA.pnpkey2sourcename = lookup ? lookup.label : `Unknown (${value})`
 											self.logVerbose('Received PnP/Key 2 Source: ' + value)
-											if (lookup) {
-												self.DATA.pnpkey2sourcename = lookup.label
-												self.logVerbose('PnP/Key 2 Source Name: ' + lookup.label)
-											}
 										} else if (param2 == '1D' && param3 == '02') {
 											//pnp key 3 source
 											let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {
 												return item.id == value
 											})
 											self.DATA.pnpkey3source = value
+											self.DATA.pnpkey3sourcename = lookup ? lookup.label : `Unknown (${value})`
 											self.logVerbose('Received PnP/Key 3 Source: ' + value)
-											if (lookup) {
-												self.DATA.pnpkey3sourcename = lookup.label
-												self.logVerbose('PnP/Key 3 Source Name: ' + lookup.label)
-											}
 										} else if (param2 == '1E' && param3 == '02') {
 											//pnp key 4 source
 											let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {
 												return item.id == value
 											})
 											self.DATA.pnpkey4source = value
+											self.DATA.pnpkey4sourcename = lookup ? lookup.label : `Unknown (${value})`
 											self.logVerbose('Received PnP/Key 4 Source: ' + value)
-											if (lookup) {
-												self.DATA.pnpkey4sourcename = lookup.label
-												self.logVerbose('PnP/Key 4 Source Name: ' + lookup.label)
-											}
 										} else if (['1B', '1C', '1D', '1E'].includes(param2) && param3 == '00') {
 											// PiP/Key PGM+PVW tally pair — xx00 (PGM) and xx01 (PVW).
 											const tallies = self._parseHexBlock(value, 2)

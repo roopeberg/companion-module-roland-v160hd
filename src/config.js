@@ -8,7 +8,7 @@ module.exports = {
 				id: 'setup_info',
 				width: 12,
 				label: 'Information',
-				value: 'This module will connect to a Roland V-160HD.',
+				value: 'This module will connect to a Roland V-160HD. <strong>Note:</strong> The V-160HD only accepts one TCP connection at a time — close any other remote control software (e.g. Roland RCS) before connecting.',
 			},
 			{
 				type: 'static-text',

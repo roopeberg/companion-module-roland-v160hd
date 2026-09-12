@@ -2,8 +2,6 @@ name: Companion Module Checks
 
 on:
   push:
-    branches:
-      - '**'
 
 jobs:
   check:

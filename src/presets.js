@@ -299,19 +299,19 @@ module.exports = {
 
 		// Source groups
 		const HDMI_SOURCES = Array.from({ length: 8 }, (_, i) => ({
-			label: `HDMI ${i + 1}`,
+			label: `$(self:label_hdmi_${i + 1})`,
 			pgmpvw_id: i.toString(16).padStart(2, '0').toUpperCase(),
 			tally_id: i,
 			typeColor: TYPE_HDMI,
 		}))
 		const SDI_SOURCES = Array.from({ length: 8 }, (_, i) => ({
-			label: `SDI ${i + 1}`,
+			label: `$(self:label_sdi_${i + 1})`,
 			pgmpvw_id: (8 + i).toString(16).padStart(2, '0').toUpperCase(),
 			tally_id: 8 + i,
 			typeColor: TYPE_SDI,
 		}))
 		const STILL_SOURCES = Array.from({ length: 16 }, (_, i) => ({
-			label: `Still ${i + 1}`,
+			label: `$(self:label_still_${i + 1})`,
 			pgmpvw_id: (0x10 + i).toString(16).padStart(2, '0').toUpperCase(),
 			tally_id: null,
 			typeColor: TYPE_STILL,

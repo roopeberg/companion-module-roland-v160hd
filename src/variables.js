@@ -125,6 +125,15 @@ module.exports = {
 			variables[`dsk${d.n}_type`] = { name: `DSK ${d.n} Captured Type` }
 		}
 
+		// Source labels (read from device LABEL EDIT area)
+		for (let i = 1; i <= 8; i++) {
+			variables[`label_hdmi_${i}`] = { name: `HDMI IN ${i} Label` }
+			variables[`label_sdi_${i}`] = { name: `SDI IN ${i} Label` }
+		}
+		for (let i = 1; i <= 16; i++) {
+			variables[`label_still_${i}`] = { name: `Still ${i} Label` }
+		}
+
 		//memory names
 		for (let i = 1; i <= 30; i++) {
 			variables['memoryname_' + i] = { name: 'Memory Name ' + i }
@@ -135,6 +144,17 @@ module.exports = {
 		variables.lastmemoryname = { name: 'Last Memory Name Loaded' }
 
 		self.setVariableDefinitions(variables)
+
+		// Set source label defaults immediately so buttons show something before device responds.
+		const labelDefaults = {}
+		for (let i = 1; i <= 8; i++) {
+			labelDefaults[`label_hdmi_${i}`] = `HDMI ${i}`
+			labelDefaults[`label_sdi_${i}`] = `SDI ${i}`
+		}
+		for (let i = 1; i <= 16; i++) {
+			labelDefaults[`label_still_${i}`] = `STILL ${i}`
+		}
+		self.setVariableValues(labelDefaults)
 	},
 
 	checkVariables: function () {

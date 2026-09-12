@@ -2921,6 +2921,14 @@ module.exports = {
 			},
 		}
 
+		actions.refresh_source_labels = {
+			name: 'Refresh Source Labels',
+			options: [],
+			callback: function () {
+				self.refreshSourceLabels()
+			},
+		}
+
 		self.setActionDefinitions(actions)
 	},
 }

@@ -206,6 +206,7 @@ module.exports = {
 			self.getOutputData()
 			self.getAuxLinkData()
 			self.getTransitionData()
+			self.getSourceLabels()
 		}
 	},
 
@@ -297,6 +298,28 @@ module.exports = {
 		self.sendRawCommand('RQH:02010D,000001;') //Aux Link Mode Off/Auto/Manual (not contiguous)
 		// Aux 1-3 link on/off are consecutive: 020154–020156 (3 bytes).
 		self.sendRawCommand('RQH:020154,000003;')
+	},
+
+	// Read LABEL EDIT area (02H 10H-2FH 00H-07H): HDMI 1-8, SDI 1-8, Still 1-16.
+	// Each label is 8 ASCII chars. Read all 32 labels to the low-priority queue.
+	getSourceLabels: function () {
+		let self = this
+		for (let i = 0; i < 8; i++) {
+			const hex = (0x10 + i).toString(16).toUpperCase().padStart(2, '0')
+			self.sendRawCommand(`RQH:02${hex}00,000008;`)
+		}
+		for (let i = 0; i < 8; i++) {
+			const hex = (0x18 + i).toString(16).toUpperCase().padStart(2, '0')
+			self.sendRawCommand(`RQH:02${hex}00,000008;`)
+		}
+		for (let i = 0; i < 16; i++) {
+			const hex = (0x20 + i).toString(16).toUpperCase().padStart(2, '0')
+			self.sendRawCommand(`RQH:02${hex}00,000008;`)
+		}
+	},
+
+	refreshSourceLabels: function () {
+		this.getSourceLabels()
 	},
 
 	getInputAssignData: function () {
@@ -586,7 +609,30 @@ module.exports = {
 										}
 									}
 
-									if (param1 == '01' && param2 == '22' && param3 == '03') {
+									// Source labels: 02H (10H-2FH) 00H — HDMI 1-8, SDI 1-8, Still 1-16
+								if (param1 === '02') {
+									const p2num = parseInt(param2, 16)
+									if (p2num >= 0x10 && p2num <= 0x2F && param3 === '00') {
+										const nameBlock = self._parseHexBlock(value, 8)
+										if (nameBlock) {
+											const displayLabel = nameBlock
+												.map((b) => String.fromCharCode(parseInt(b, 16)))
+												.join('')
+												.replace(/\0/g, '')
+												.trimEnd()
+											let varKey
+											if (p2num <= 0x17) varKey = `label_hdmi_${p2num - 0x10 + 1}`
+											else if (p2num <= 0x1f) varKey = `label_sdi_${p2num - 0x18 + 1}`
+											else varKey = `label_still_${p2num - 0x20 + 1}`
+											if (displayLabel.length > 0) {
+												self.setVariableValues({ [varKey]: displayLabel })
+											}
+											self.logVerbose(`Received source label ${varKey}: "${displayLabel}"`)
+										}
+									}
+								}
+
+								if (param1 == '01' && param2 == '22' && param3 == '03') {
 										//aux 1 mute
 										self.DATA.aux1mute = value
 										self.logVerbose('Received Aux 1 Mute: ' + value)

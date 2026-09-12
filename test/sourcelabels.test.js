@@ -60,6 +60,24 @@ function labelMsg(addr, text) {
 	return `DTH:02${addr}00,${hex}`
 }
 
+// Build a bulk DTH response as the device returns for RQH:02XXYY,NNNNNN.
+// Each entry is { addr, text } where addr is a p2 hex string.
+// Labels are placed at 256-byte (512 hex char) strides; padding is 00.
+function bulkLabelMsg(p2start, entries) {
+	const stride = 512 // 256 bytes per slot = 512 hex chars
+	const totalSlots = entries.length
+	const buf = Array(totalSlots * stride).fill('0')
+	entries.forEach((entry, i) => {
+		const padded = entry.text.padEnd(8, '\0')
+		const hex = Array.from(padded)
+			.map((c) => c.charCodeAt(0).toString(16).padStart(2, '0'))
+			.join('')
+			.toUpperCase()
+		for (let j = 0; j < 16; j++) buf[i * stride + j] = hex[j]
+	})
+	return `DTH:02${p2start}00,${buf.join('')}`
+}
+
 // ---------------------------------------------------------------------------
 // Address → variable key mapping
 // ---------------------------------------------------------------------------
@@ -203,5 +221,60 @@ describe('source label invalid response handling', () => {
 		inst.updateData('DTH:021000,ZZZZZZZZZZZZZZZZ')
 		const key = inst._setVarCalls.find((c) => c.label_hdmi_1 !== undefined)
 		assert.equal(key, undefined, 'non-hex response should not set variable')
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Bulk read response handling (RQH:021000,000800 style)
+// ---------------------------------------------------------------------------
+
+describe('source label bulk read response', () => {
+	test('HDMI bulk: sets all 8 HDMI labels from a single 2048-byte response', () => {
+		const inst = makeInstance()
+		const entries = Array.from({ length: 8 }, (_, i) => ({ text: `HDMI${i + 1} ` }))
+		const msg = bulkLabelMsg('10', entries)
+		inst.updateData(msg)
+		for (let i = 1; i <= 8; i++) {
+			const key = inst._setVarCalls.find((c) => c[`label_hdmi_${i}`] !== undefined)
+			assert.ok(key, `expected label_hdmi_${i} to be set`)
+			assert.equal(key[`label_hdmi_${i}`], `HDMI${i}`)
+		}
+	})
+
+	test('Still bulk: sets correct labels from 16-slot response', () => {
+		const inst = makeInstance()
+		const entries = Array.from({ length: 16 }, (_, i) => ({ text: `STILL${i + 1}`.padEnd(7) }))
+		const msg = bulkLabelMsg('20', entries)
+		inst.updateData(msg)
+		const key1 = inst._setVarCalls.find((c) => c.label_still_1 !== undefined)
+		const key16 = inst._setVarCalls.find((c) => c.label_still_16 !== undefined)
+		assert.ok(key1, 'expected label_still_1 to be set')
+		assert.ok(key16, 'expected label_still_16 to be set')
+	})
+
+	test('bus bulk: sets PGM/SubPGM/PVW/AUX1 from 4-slot response at 0x30', () => {
+		const inst = makeInstance()
+		const entries = [{ text: 'MAIN PGM' }, { text: 'SUB PGM ' }, { text: 'PREVIEW ' }, { text: 'AUX MON ' }]
+		const msg = bulkLabelMsg('30', entries)
+		inst.updateData(msg)
+		assert.ok(
+			inst._setVarCalls.find((c) => c.label_pgm !== undefined),
+			'label_pgm should be set',
+		)
+		assert.ok(
+			inst._setVarCalls.find((c) => c.label_aux1 !== undefined),
+			'label_aux1 should be set',
+		)
+		assert.equal(inst._setVarCalls.find((c) => c.label_pgm !== undefined).label_pgm, 'MAIN PGM')
+	})
+
+	test('bulk: unknown p2 slots within a bulk response are silently skipped', () => {
+		const inst = makeInstance()
+		// p2 = 0x05 is not a label address; bulk with 2 slots at 0x05-0x06
+		const entries = [{ text: 'IGNORED1' }, { text: 'IGNORED2' }]
+		const msg = bulkLabelMsg('05', entries)
+		inst.updateData(msg)
+		const anyLabel = inst._setVarCalls.some((c) => Object.keys(c).some((k) => k.startsWith('label_')))
+		assert.equal(anyLabel, false)
 	})
 })

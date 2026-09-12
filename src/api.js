@@ -206,6 +206,7 @@ module.exports = {
 			self.getOutputData()
 			self.getAuxLinkData()
 			self.getTransitionData()
+			self.getMonitorData()
 		}
 	},
 
@@ -297,6 +298,13 @@ module.exports = {
 		self.sendRawCommand('RQH:02010D,000001;') //Aux Link Mode Off/Auto/Manual (not contiguous)
 		// Aux 1-3 link on/off are consecutive: 020154–020156 (3 bytes).
 		self.sendRawCommand('RQH:020154,000003;')
+	},
+
+	getMonitorData: function () {
+		let self = this
+
+		// Monitor SW 1–4 Assign are consecutive: 020116–020119 (4 bytes).
+		self.sendRawCommand('RQH:020116,000004;')
 	},
 
 	// Read all 40 source labels as individual 8-byte RQH queries (one per P2 slot).
@@ -853,6 +861,37 @@ module.exports = {
 									if (param1 == '02' && param2 == '01' && param3 == '56') {
 										self.DATA.aux3link = value
 										self.logVerbose('Received Aux 3 Link: ' + value)
+									}
+
+									if (param1 == '02' && param2 == '01' && param3 == '16') {
+										const monitorBlock = self._parseHexBlock(value, 4)
+										if (monitorBlock) {
+											// Multi-byte: RQH:020116,000004 — Monitor 1–4 assign in one shot.
+											for (let m = 0; m < 4; m++) {
+												self.DATA[`monitor${m + 1}_assign`] = monitorBlock[m]
+											}
+											self.logVerbose('Received monitor assign block: ' + value)
+										} else if (self._parseHexBlock(value, 1)) {
+											self.DATA.monitor1_assign = value
+											self.logVerbose('Received Monitor 1 Assign: ' + value)
+										} else {
+											self.log('warn', `DTH:020116 — unexpected value "${value}", ignored`)
+										}
+									}
+
+									if (param1 == '02' && param2 == '01' && param3 == '17') {
+										self.DATA.monitor2_assign = value
+										self.logVerbose('Received Monitor 2 Assign: ' + value)
+									}
+
+									if (param1 == '02' && param2 == '01' && param3 == '18') {
+										self.DATA.monitor3_assign = value
+										self.logVerbose('Received Monitor 3 Assign: ' + value)
+									}
+
+									if (param1 == '02' && param2 == '01' && param3 == '19') {
+										self.DATA.monitor4_assign = value
+										self.logVerbose('Received Monitor 4 Assign: ' + value)
 									}
 
 									if (param1 == '60') {

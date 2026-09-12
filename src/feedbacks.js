@@ -580,6 +580,37 @@ module.exports = {
 			},
 		}
 
+		feedbacks.monitor_source = {
+			type: 'boolean',
+			name: 'Monitor Source Active',
+			description: 'True when the selected monitor is showing the specified source',
+			defaultStyle: { bgcolor: combineRgb(0, 100, 180) },
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Monitor',
+					id: 'monitor',
+					default: '1',
+					choices: [
+						{ id: '1', label: 'Monitor 1' },
+						{ id: '2', label: 'Monitor 2' },
+						{ id: '3', label: 'Monitor 3' },
+						{ id: '4', label: 'Monitor 4' },
+					],
+				},
+				{
+					type: 'dropdown',
+					label: 'Source',
+					id: 'source',
+					default: self.CHOICES_MONITORASSIGN[0].id,
+					choices: self.CHOICES_MONITORASSIGN,
+				},
+			],
+			callback: function (feedback) {
+				return self.DATA[`monitor${feedback.options.monitor}_assign`] === feedback.options.source
+			},
+		}
+
 		self.setFeedbackDefinitions(feedbacks)
 	},
 }

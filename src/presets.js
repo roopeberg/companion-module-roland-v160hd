@@ -1538,6 +1538,41 @@ module.exports = {
 
 		addSection('take', 'Take', ['cut_take', 'auto_take'])
 
+		// Monitor 1–4 assign presets — one button per monitor × source combination
+		const MONITOR_COLOR = combineRgb(0, 80, 160)
+		const MONITOR_DIM = combineRgb(0, 25, 50)
+		const monitorPresetIds = []
+		for (let m = 1; m <= 4; m++) {
+			for (const src of self.CHOICES_MONITORASSIGN) {
+				const key = `monitor${m}_${src.id}`
+				presets[key] = {
+					name: `Monitor ${m}: ${src.label}`,
+					type: 'button',
+					style: {
+						text: `MON ${m}\\n${src.label}`,
+						size: '14',
+						color: combineRgb(255, 255, 255),
+						bgcolor: MONITOR_DIM,
+					},
+					steps: [
+						{
+							down: [{ actionId: 'set_monitor_assign', options: { monitor: String(m), source: src.id } }],
+							up: [],
+						},
+					],
+					feedbacks: [
+						{
+							feedbackId: 'monitor_source',
+							options: { monitor: String(m), source: src.id },
+							style: { bgcolor: MONITOR_COLOR },
+						},
+					],
+				}
+				monitorPresetIds.push(key)
+			}
+		}
+		addSection('monitor_assign', 'Monitor Assign', monitorPresetIds)
+
 		self.setPresetDefinitions(structure, presets)
 	},
 }

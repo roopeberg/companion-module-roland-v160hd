@@ -2946,6 +2946,42 @@ module.exports = {
 			},
 		}
 
+		actions.set_monitor_assign = {
+			name: 'Assign Monitor Output',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Monitor',
+					id: 'monitor',
+					default: '1',
+					choices: [
+						{ id: '1', label: 'Monitor 1' },
+						{ id: '2', label: 'Monitor 2' },
+						{ id: '3', label: 'Monitor 3' },
+						{ id: '4', label: 'Monitor 4' },
+					],
+				},
+				{
+					type: 'dropdown',
+					label: 'Source',
+					id: 'source',
+					default: self.CHOICES_MONITORASSIGN[0].id,
+					choices: self.CHOICES_MONITORASSIGN,
+				},
+			],
+			callback: function (action) {
+				const monitorIndex = parseInt(action.options.monitor) - 1
+				// Addresses 020116–020119 for monitors 1–4 (System Parameter Area)
+				const addr = (0x020116 + monitorIndex).toString(16).padStart(6, '0').toUpperCase()
+				self.sendCommand(addr, action.options.source)
+				// Optimistic variable update
+				self.setVariableValues({ [`monitor${action.options.monitor}_source`]: action.options.source })
+				self.checkFeedbacks('monitor_source')
+				// Readback to confirm
+				self.sendRawCommand(`RQH:${addr},000001;`)
+			},
+		}
+
 		actions.refresh_source_labels = {
 			name: 'Refresh Source Labels',
 			options: [],

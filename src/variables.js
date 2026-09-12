@@ -31,6 +31,12 @@ module.exports = {
 		variables.pnpkey3_source = { name: 'PnP/Key 3 Source' }
 		variables.pnpkey4_source = { name: 'PnP/Key 4 Source' }
 
+		//Monitor Assigns
+		variables.monitor1_source = { name: 'Monitor 1 Source' }
+		variables.monitor2_source = { name: 'Monitor 2 Source' }
+		variables.monitor3_source = { name: 'Monitor 3 Source' }
+		variables.monitor4_source = { name: 'Monitor 4 Source' }
+
 		//Output Assigns
 		variables.hdmi1 = { name: 'HDMI Output 1 Source' }
 		variables.hdmi2 = { name: 'HDMI Output 2 Source' }
@@ -321,6 +327,13 @@ module.exports = {
 			variableObj.aux1link = self.DATA.aux1link == '01' ? 'On' : 'Off'
 			variableObj.aux2link = self.DATA.aux2link == '01' ? 'On' : 'Off'
 			variableObj.aux3link = self.DATA.aux3link == '01' ? 'On' : 'Off'
+
+			//Monitor Assigns
+			for (let m = 1; m <= 4; m++) {
+				const raw = self.DATA[`monitor${m}_assign`]
+				const found = self.CHOICES_MONITORASSIGN.find((item) => item.id === raw)
+				variableObj[`monitor${m}_source`] = found ? found.label : (raw ?? '-')
+			}
 
 			//Transition
 			const TRANS_TYPE_LABELS = ['Mix', 'Wipe']

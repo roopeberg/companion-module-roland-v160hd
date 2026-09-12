@@ -227,6 +227,15 @@ Verify that all 40 source label variables populate even when polling is disabled
 5. Press **AUTO Take** preset button — device should dissolve/mix to the new source over the configured transition time
 6. PGM tally feedback should update after the transition completes (within the next poll cycle)
 
+## ⚠️ #32 — Monitor 1–4 source assignment
+
+1. Connect Companion and open the **Monitor Assign** preset section
+2. Press e.g. **MON 1 / Multi-View** — Monitor 1 output on the device should switch to Multi-View
+3. The `monitor1_source` variable should update immediately (optimistic) and again after the next background poll (~5 s)
+4. The `monitor_source` feedback button should light up (blue) for the active assignment
+5. Test Monitor 2–4 similarly with different sources (Program, Preview, Aux 1–3, DSK 1–2 Source)
+6. Verify N/A selection turns off the monitor output
+
 ## ⚠️ #29 — INPUT/XPT 11–20 assignment resolution
 
 Confirms that Companion correctly resolves which physical source (HDMI, SDI, etc.) is assigned to INPUT slots 11–20.

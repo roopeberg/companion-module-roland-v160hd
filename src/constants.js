@@ -194,6 +194,23 @@ module.exports = {
 		{ id: '0A', label: '16 Still-View' },
 	],
 
+	// Monitor SW Assign (02H 01H 16H–19H). Values differ from Output Assign —
+	// N/A is valid here (monitor off) and the order matches the Control Guide list.
+	CHOICES_MONITORASSIGN: [
+		{ id: '00', label: 'N/A' },
+		{ id: '01', label: 'Multi-View' },
+		{ id: '02', label: '16 Input-View' },
+		{ id: '03', label: '16 Still-View' },
+		{ id: '04', label: 'Program' },
+		{ id: '05', label: 'Sub Program' },
+		{ id: '06', label: 'Preview' },
+		{ id: '07', label: 'Aux 1' },
+		{ id: '08', label: 'Aux 2' },
+		{ id: '09', label: 'Aux 3' },
+		{ id: '0A', label: 'DSK 1 Source' },
+		{ id: '0B', label: 'DSK 2 Source' },
+	],
+
 	CHOICES_PINPDSK: [
 		{ id: 18, label: 'Program Layer PinP & Key 1' },
 		{ id: 19, label: 'Program Layer PinP & Key 2' },

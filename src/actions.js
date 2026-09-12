@@ -178,6 +178,16 @@ module.exports = {
 					self.checkFeedbacks('bus_tally')
 				}
 			},
+			learn: function (action) {
+				const auxKeyMap = {
+					'000011': 'aux1source',
+					'00002E': 'aux2source',
+					'00002F': 'aux3source',
+				}
+				const dataKey = auxKeyMap[action.options.aux]
+				if (!dataKey || self.DATA[dataKey] === undefined) return undefined
+				return { assign: self.DATA[dataKey] }
+			},
 		}
 
 		actions.aux_mute = {
@@ -1703,6 +1713,10 @@ module.exports = {
 				self.sendCommand(address, value)
 				self.getAuxSources()
 			},
+			learn: function () {
+				if (self.DATA.pgm_source === undefined) return undefined
+				return { input: self.DATA.pgm_source }
+			},
 		}
 
 		actions.select_pvw = {
@@ -1722,6 +1736,10 @@ module.exports = {
 				let value = options.input
 				self.sendCommand(address, value)
 				self.getAuxSources()
+			},
+			learn: function () {
+				if (self.DATA.pvw_source === undefined) return undefined
+				return { input: self.DATA.pvw_source }
 			},
 		}
 

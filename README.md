@@ -123,6 +123,13 @@ This fork extends and fixes the [original Bitfocus module](https://github.com/bi
 | DTH 20 ms gap race | The 20 ms rate limit was only enforced when a second command was already queued. If the queue emptied between two rapid commands, `setImmediate` fired the second command immediately (observed 1 ms gap). Fixed by tracking the wall-clock time of the last send via `_lastHighSentAt`. |
 | Duplicate `getAuxSources` on action | Actions called `getAuxSources()` and the tally notification triggered a second call milliseconds later — up to 6 queries per source change. Fixed with a 250 ms debounce on `getAuxSources`. |
 | `RQH:000110` no data response | USB output assign register was queried every poll cycle but the device never returns a data response, wasting one query per cycle. Removed from steady-state polling. |
+| `lastmemorynumber` off-by-one | Device returns a 0-indexed memory number (0–29); the variable exposed the raw value instead of the human-readable slot number (1–30). |
+| ERR:N responses unhandled | Only `ERR:0` was caught (and silently ignored); other error codes fell through to the data parser. All `ERR:N` responses are now logged with descriptive messages; `ERR:4` and `ERR:5` (auth failures) log at error level. |
+| Unknown PiP source stale label | When the device reported an unrecognised PiP source value the `pnpkeyNsourcename` variable kept its previous value, silently showing the wrong label. Now set to `Unknown (XX)` so the raw value is visible. |
+| Login lockout on reconnect | Password was sent every time `Enter password:` arrived on any connection. If TCPHelper reconnected mid-session, a second send could trigger the device's lockout. Fixed with a per-connection `_passwordSent` flag; `Authentication error.` and `Wait a moment.` responses are now caught and logged. |
+| Press-and-release timer on disconnect | The 200 ms release command was scheduled with a bare `setTimeout` — if the connection dropped before it fired, the command was sent to a dead socket. Timer handle now stored in `_pressTimer` and cancelled on `socket.on('end')`. |
+| Password visible in Companion UI | Config field type was `textinput`, exposing the password in the UI and logs. Changed to `secret-text`; an upgrade script migrates existing saved configs automatically. |
+| Feedback scan on every message | `checkAllFeedbacks()` + `checkVariables()` ran after each incoming TCP message. A polling burst of 7–20 messages triggered 7–20 full scans. A 40 ms debounce coalesces each burst into one scan; targeted optimistic-update calls in actions are unaffected. |
 
 ## Documentation
 

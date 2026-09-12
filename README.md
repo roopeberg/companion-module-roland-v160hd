@@ -31,7 +31,7 @@ The V-160HD has two rows of 10 buttons on the hardware panel, giving 20 logical 
 | Panel mode | PGM/A row | PST/B row | Notes |
 |---|---|---|---|
 | **PGM/PST(10)** | INPUT 1–10 → PGM | INPUT 1–10 → PVW | Default mode; each row selects the same 10 sources for its bus |
-| **PGM/PST(20)** | INPUT 1–10 → PGM | INPUT 11–20 → PGM | All 20 slots select PGM; PVW controlled separately |
+| **PGM/PST(20)** | INPUT 1–10 → PGM | INPUT 11–20 → PST/B | All 20 slots select a source; cut/auto transitions that source to PGM |
 | **PGM(10)/AUX** | INPUT 1–10 → PGM | INPUT 1–10 → AUX | PST row switches an AUX bus instead |
 
 Companion uses the protocol slot IDs (`0x20`–`0x33`) for PGM/PVW selection and the assignment registers (`000000`–`000009`, `000024`–`00002D`) to resolve which physical source (HDMI, SDI, etc.) each slot is mapped to. The panel mode does **not** change which slot IDs are available in Companion — the preset labels simply reflect whatever the operator has assigned to each slot on the device.
@@ -116,7 +116,7 @@ This fork extends and fixes the [original Bitfocus module](https://github.com/bi
 | INPUT/XPT 1–20 | All 20 logical input slots exposed for PGM, PVW, AUX, and PiP source selection. Original supported only 10. Assignment registers for slots 11–20 (`000024`–`00002D`) are queried separately at connect. |
 | Full freeze select | Control and monitor per-input freeze state for all 18 inputs (HDMI 1–8, SDI 1–8). Original only exposed global freeze on/off. |
 | Source label variables | Device-side labels read at connect for all 40 label slots. Variables `label_hdmi_1`–`label_hdmi_8`, `label_sdi_1`–`label_sdi_8`, `label_still_1`–`label_still_16`, `label_pgm`, `label_subpgm`, `label_pvw`, `label_aux1`–`label_aux3`, `label_dsk1src`, `label_dsk2src`. Preset button text updates automatically when a label changes on the device. |
-| Set Device Label | Write any of the 40 label slots back to the device from Companion. Variable updated optimistically; a readback query confirms the write. |
+| Set Device Label | Write any of the 40 label slots back to the device from Companion. Variable updated optimistically; a readback query is sent after the write to refresh the variable from device state. |
 | Capture / Apply / Snapshot | Save and restore complete PiP 1–4 and DSK 1–2 configurations as JSON snapshots on disk. |
 | Memory presets | Preset buttons auto-labelled with slot names polled from the device. |
 | Optimistic updates | Button-press state reflected immediately in feedbacks; no waiting for the next poll cycle. |

@@ -239,9 +239,10 @@ Confirms that Companion correctly resolves which physical source (HDMI, SDI, etc
 
 ## Notes
 
-- **Unit tests**: `npm test` runs 68 automated unit tests across 4 test files:
+- **Unit tests**: `npm test` runs 105 automated unit tests across 5 test files:
   - `test/tcpParser.test.js` — TCP parser: split packets, merged packets, auth prompts, delimiter ordering
-  - `test/api.test.js` — protocol helpers: `_parseHexBlock`, priority queue drain, `_drainBatch`
+  - `test/queue.test.js` — priority queue drain, `_drainBatch`, 20 ms rate limit
+  - `test/multibyte.test.js` — multi-byte RQH query helpers, `_parseHexBlock`
   - `test/sourcelabels.test.js` — label address mapping, ASCII decoding, invalid responses, write/readback
   - `test/inputassign.test.js` — INPUT/XPT 1–20: address queries, slot→register mapping, updateData handler
 - Snapshot round-trips and all live-device protocol flows still require manual testing per the checklist above.

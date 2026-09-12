@@ -361,6 +361,11 @@ module.exports = {
 			.join('')
 			.substring(0, 8)
 
+		if (safe.trimEnd().length === 0) {
+			self.log('warn', `setSourceLabel: empty label for 0x${p2hex} — skipping write`)
+			return
+		}
+
 		// Pad to exactly 8 chars with spaces (device requires a full 8-byte field).
 		const padded = safe.padEnd(8, ' ')
 		const hex = padded
@@ -369,7 +374,7 @@ module.exports = {
 			.join('')
 
 		// Optimistic update so the UI reflects the change immediately.
-		self.setVariableValues({ [varKey]: safe.trimEnd() || padded.trimEnd() })
+		self.setVariableValues({ [varKey]: safe.trimEnd() })
 
 		// Write to device (high priority — user-initiated write, 20 ms rate limit applies).
 		self.sendRawCommand(`DTH:02${p2hex}00,${hex};`, 'high')

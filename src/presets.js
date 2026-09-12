@@ -175,41 +175,13 @@ module.exports = {
 					x: 3,
 					y: 20,
 					width: 94,
-					height: 65,
+					height: 80,
 					text: sourceLabel,
 					fontsize: FONT_SIZE,
 					fontsizeAllowShrink: true,
 					color: WHITE,
 					halign: 'center',
 					valign: 'center',
-				},
-				// AUX strips — dim bus colour by default, brightened by secondary feedbacks.
-				{
-					type: 'box',
-					id: 'dot_aux1',
-					x: 3,
-					y: 87,
-					width: 29,
-					height: 10,
-					color: DIM_AMBER,
-				},
-				{
-					type: 'box',
-					id: 'dot_aux2',
-					x: 35,
-					y: 87,
-					width: 29,
-					height: 10,
-					color: DIM_CYAN_AUX,
-				},
-				{
-					type: 'box',
-					id: 'dot_aux3',
-					x: 67,
-					y: 87,
-					width: 29,
-					height: 10,
-					color: DIM_VIOLET,
 				},
 			]
 		}
@@ -408,15 +380,12 @@ module.exports = {
 		}
 
 		// Secondary tally feedbacks for per-bus source buttons.
-		// Updates circles (pgm_dot / pvw_dot) and AUX strips from dim to full brightness.
+		// Shows PGM/PVW circle indicators only; AUX strips are not shown on per-bus buttons.
 		// primaryBus is excluded since it drives the overlay instead.
 		function secondaryFeedbacks(source, primaryBus) {
 			const all = [
 				{ bus: 'pgm', elementId: 'pgm_dot', color: RED },
 				{ bus: 'pvw', elementId: 'pvw_dot', color: GREEN },
-				{ bus: 'aux1', elementId: 'dot_aux1', color: AMBER },
-				{ bus: 'aux2', elementId: 'dot_aux2', color: CYAN_AUX },
-				{ bus: 'aux3', elementId: 'dot_aux3', color: VIOLET },
 			]
 			return all
 				.filter((b) => b.bus !== primaryBus)

@@ -2929,6 +2929,52 @@ module.exports = {
 			},
 		}
 
+		const LABEL_TARGETS = [
+			...Array.from({ length: 8 }, (_, i) => ({
+				id: (0x10 + i).toString(16).toUpperCase().padStart(2, '0'),
+				label: `HDMI IN ${i + 1}`,
+			})),
+			...Array.from({ length: 8 }, (_, i) => ({
+				id: (0x18 + i).toString(16).toUpperCase().padStart(2, '0'),
+				label: `SDI IN ${i + 1}`,
+			})),
+			...Array.from({ length: 16 }, (_, i) => ({
+				id: (0x20 + i).toString(16).toUpperCase().padStart(2, '0'),
+				label: `Still ${i + 1}`,
+			})),
+			{ id: '30', label: 'PGM' },
+			{ id: '31', label: 'Sub PGM' },
+			{ id: '32', label: 'PVW' },
+			{ id: '33', label: 'AUX 1' },
+			{ id: '3A', label: 'AUX 2' },
+			{ id: '3B', label: 'AUX 3' },
+			{ id: '3C', label: 'DSK 1 Source' },
+			{ id: '3D', label: 'DSK 2 Source' },
+		]
+
+		actions.set_device_label = {
+			name: 'Set Device Label',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Target',
+					id: 'target',
+					default: '10',
+					choices: LABEL_TARGETS,
+				},
+				{
+					type: 'textinput',
+					label: 'Label (max 8 printable ASCII characters)',
+					id: 'text',
+					default: '',
+					tooltip: 'Up to 8 characters. The text is written to the device and shown in preset buttons.',
+				},
+			],
+			callback: function (action) {
+				self.setSourceLabel(action.options.target, action.options.text ?? '')
+			},
+		}
+
 		self.setActionDefinitions(actions)
 	},
 }

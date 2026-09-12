@@ -278,3 +278,90 @@ describe('source label bulk read response', () => {
 		assert.equal(anyLabel, false)
 	})
 })
+
+// ---------------------------------------------------------------------------
+// setSourceLabel — write + optimistic variable update
+// ---------------------------------------------------------------------------
+
+describe('setSourceLabel', () => {
+	function makeWriteInstance() {
+		const setVarCalls = []
+		const rawCmds = []
+		const warnings = []
+		const inst = {
+			log: (_l, msg) => {
+				if (_l === 'warn') warnings.push(msg)
+			},
+			logVerbose: () => {},
+			setVariableValues: (obj) => setVarCalls.push(obj),
+			sendRawCommand: (cmd, priority) => rawCmds.push({ cmd, priority }),
+		}
+		inst.setSourceLabel = api.setSourceLabel.bind(inst)
+		inst._setVarCalls = setVarCalls
+		inst._rawCmds = rawCmds
+		inst._warnings = warnings
+		return inst
+	}
+
+	test('encodes text as padded hex and sends DTH high-priority', () => {
+		const inst = makeWriteInstance()
+		inst.setSourceLabel('10', 'CAM 1')
+		const dth = inst._rawCmds.find((c) => c.cmd.startsWith('DTH:'))
+		assert.ok(dth, 'expected a DTH command')
+		assert.equal(dth.priority, 'high')
+		// 'CAM 1   ' → 43414D2031202020
+		assert.ok(dth.cmd.includes('43414D2031202020'), `unexpected hex in: ${dth.cmd}`)
+	})
+
+	test('sends RQH readback low-priority after write', () => {
+		const inst = makeWriteInstance()
+		inst.setSourceLabel('10', 'CAM 1')
+		const rqh = inst._rawCmds.find((c) => c.cmd.startsWith('RQH:'))
+		assert.ok(rqh, 'expected a readback RQH command')
+		assert.equal(rqh.priority, undefined) // default = low
+		assert.ok(rqh.cmd.includes('021000'), `unexpected address in: ${rqh.cmd}`)
+	})
+
+	test('optimistically updates the Companion variable', () => {
+		const inst = makeWriteInstance()
+		inst.setSourceLabel('18', 'ROUTER')
+		const v = inst._setVarCalls.find((c) => c.label_sdi_1 !== undefined)
+		assert.ok(v, 'expected label_sdi_1 to be set optimistically')
+		assert.equal(v.label_sdi_1, 'ROUTER')
+	})
+
+	test('truncates text longer than 8 characters', () => {
+		const inst = makeWriteInstance()
+		inst.setSourceLabel('10', 'TOOLONGNAME')
+		const dth = inst._rawCmds.find((c) => c.cmd.startsWith('DTH:'))
+		// DTH hex value is exactly 16 chars (8 bytes)
+		const hexPart = dth.cmd.split(',')[1].replace(';', '')
+		assert.equal(hexPart.length, 16, `expected 16 hex chars, got ${hexPart.length}`)
+	})
+
+	test('replaces non-printable characters with spaces', () => {
+		const inst = makeWriteInstance()
+		inst.setSourceLabel('10', 'CAM\x01\x7f1')
+		const dth = inst._rawCmds.find((c) => c.cmd.startsWith('DTH:'))
+		// \x01 and \x7f are not printable ASCII (0x20-0x7E) — become 0x20 (space)
+		assert.ok(dth.cmd.includes('43414D'), 'CAM prefix should be encoded correctly')
+		assert.ok(dth.cmd.includes('2020'), 'non-printable chars should become spaces')
+	})
+
+	test('logs a warning for an unknown address', () => {
+		const inst = makeWriteInstance()
+		inst.setSourceLabel('05', 'NOPE')
+		assert.ok(inst._warnings.some((w) => w.includes('0x05')))
+		assert.equal(inst._rawCmds.length, 0, 'no commands should be sent for unknown address')
+	})
+
+	test('handles bus label targets: AUX 2 (0x3A)', () => {
+		const inst = makeWriteInstance()
+		inst.setSourceLabel('3A', 'STREAM')
+		const v = inst._setVarCalls.find((c) => c.label_aux2 !== undefined)
+		assert.ok(v, 'expected label_aux2 to be set')
+		assert.equal(v.label_aux2, 'STREAM')
+		const dth = inst._rawCmds.find((c) => c.cmd.startsWith('DTH:'))
+		assert.ok(dth.cmd.includes('023A00'), `unexpected address in: ${dth.cmd}`)
+	})
+})

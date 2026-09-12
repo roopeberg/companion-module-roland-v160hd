@@ -316,6 +316,57 @@ module.exports = {
 		this.getSourceLabels()
 	},
 
+	// Write a label to the device LABEL EDIT area and update the Companion variable.
+	// p2hex: P2 address byte as uppercase hex string (e.g. '10' for HDMI IN 1).
+	// text: up to 8 printable ASCII characters; longer strings are truncated,
+	//       non-printable characters are replaced with spaces.
+	setSourceLabel: function (p2hex, text) {
+		let self = this
+		const p2num = parseInt(p2hex, 16)
+
+		// Determine the Companion variable key for optimistic update.
+		let varKey = null
+		if (p2num >= 0x10 && p2num <= 0x17) varKey = `label_hdmi_${p2num - 0x10 + 1}`
+		else if (p2num >= 0x18 && p2num <= 0x1f) varKey = `label_sdi_${p2num - 0x18 + 1}`
+		else if (p2num >= 0x20 && p2num <= 0x2f) varKey = `label_still_${p2num - 0x20 + 1}`
+		else if (p2num === 0x30) varKey = 'label_pgm'
+		else if (p2num === 0x31) varKey = 'label_subpgm'
+		else if (p2num === 0x32) varKey = 'label_pvw'
+		else if (p2num === 0x33) varKey = 'label_aux1'
+		else if (p2num === 0x3a) varKey = 'label_aux2'
+		else if (p2num === 0x3b) varKey = 'label_aux3'
+		else if (p2num === 0x3c) varKey = 'label_dsk1src'
+		else if (p2num === 0x3d) varKey = 'label_dsk2src'
+
+		if (varKey === null) {
+			self.log('warn', `setSourceLabel: unknown address 0x${p2hex}`)
+			return
+		}
+
+		// Sanitise: keep only printable 7-bit ASCII (0x20-0x7E), truncate to 8 chars.
+		const safe = text
+			.split('')
+			.map((c) => (c.charCodeAt(0) >= 0x20 && c.charCodeAt(0) <= 0x7e ? c : ' '))
+			.join('')
+			.substring(0, 8)
+
+		// Pad to exactly 8 chars with spaces (device requires a full 8-byte field).
+		const padded = safe.padEnd(8, ' ')
+		const hex = padded
+			.split('')
+			.map((c) => c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'))
+			.join('')
+
+		// Optimistic update so the UI reflects the change immediately.
+		self.setVariableValues({ [varKey]: safe.trimEnd() || padded.trimEnd() })
+
+		// Write to device (high priority — user-initiated write, 20 ms rate limit applies).
+		self.sendRawCommand(`DTH:02${p2hex}00,${hex};`, 'high')
+
+		// Read back to confirm device accepted the value (low priority).
+		self.sendRawCommand(`RQH:02${p2hex}00,000008;`)
+	},
+
 	getInputAssignData: function () {
 		let self = this
 

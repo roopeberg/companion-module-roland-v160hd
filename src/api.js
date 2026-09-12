@@ -76,6 +76,7 @@ module.exports = {
 				self.log('info', 'Connected — waiting for auth prompt')
 				self.tcpBuffer = ''
 				self.memoryNameIndex = 0
+				self._passwordSent = false
 				self.updateStatus(InstanceStatus.Connecting, 'Authenticating')
 			})
 
@@ -366,9 +367,17 @@ module.exports = {
 		}
 
 		if (data.trim() == 'Enter password:') {
+			if (self._passwordSent) {
+				self.log('warn', 'Auth prompt received again on same connection — ignoring to avoid lockout')
+				return
+			}
+			self._passwordSent = true
 			self.updateStatus(InstanceStatus.Connecting, 'Authenticating')
 			self.log('info', 'Sending passcode')
 			self.socket.send(self.config.password + '\n')
+		} else if (data.trim() == 'Authentication error.' || data.trim() == 'Wait a moment.') {
+			self.log('error', `Login rejected by device: "${data.trim()}" — check password or wait before reconnecting`)
+			self.updateStatus(InstanceStatus.ConnectionFailure, data.trim())
 		} else if (data.trim() == 'Welcome to V-160HD.') {
 			self.updateStatus(InstanceStatus.Ok)
 			self.log('info', 'Authenticated.')

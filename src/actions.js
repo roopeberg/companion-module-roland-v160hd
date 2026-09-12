@@ -1505,7 +1505,8 @@ module.exports = {
 			callback: function (action, _bank) {
 				let options = action.options
 				self.sendCommand(options.switch, '01')
-				setTimeout(function () {
+				self._pressTimer = setTimeout(function () {
+					self._pressTimer = undefined
 					self.sendCommand(options.switch, '00')
 				}, 200)
 			},

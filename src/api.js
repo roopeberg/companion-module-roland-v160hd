@@ -85,6 +85,10 @@ module.exports = {
 				self.log('warn', 'Connection closed by device — TCPHelper will reconnect in 30 s')
 				clearInterval(self.INTERVAL)
 				self.INTERVAL = undefined
+				if (self._pressTimer !== undefined) {
+					clearTimeout(self._pressTimer)
+					self._pressTimer = undefined
+				}
 				self.updateStatus(InstanceStatus.ConnectionFailure, 'Connection Closed')
 			})
 

@@ -8,8 +8,14 @@ The switcher should be running firmware 1.04 or higher. A password must be set o
 
 ## Configuration
 
-- Enter the IP address of the device in the configuration settings.
-- The device will use TCP port 8023.
+| Setting | Value |
+|---|---|
+| Host | IP address of the V-160HD |
+| Port | 8023 (fixed) |
+| Password | Must match the switcher's password (stored securely) |
+| Enable Polling | Required for feedbacks and variables |
+| Polling Rate | ms between polls (300–30 000, default 500) |
+| Verbose Logging | Logs all raw TCP traffic — useful for debugging |
 
 ## Actions
 
@@ -73,9 +79,25 @@ The switcher should be running firmware 1.04 or higher. A password must be set o
 
 ## Feedbacks
 
-- **Bus Tally (per bus)** — true when a given source is active on a specific bus (PGM, PVW, AUX1–3). Each bus is tracked independently: PGM tally only lights up when the source is on PGM, not when it is on an AUX bus. PGM, PVW and AUX sources are polled every interval (requires polling enabled) and updated immediately when Companion sends a select command.
-- **PnP/Key On Air State** — highlights a button when a PiP/Key channel is active
-- **Snapshot File Exists** — true when a named snapshot file is present on disk. Used by Save/Clear preset buttons to indicate whether a slot is occupied.
+- **Bus Tally (per bus)** — true when a given source is active on a specific bus (PGM, PVW, AUX 1–3). Each bus is tracked independently; PGM tally only lights when the source is on PGM, not on an AUX. Updated immediately on Companion sends and confirmed by the next poll.
+- **PnP/Key On Air State** — true when a PiP/Key channel is on or off on PGM or PVW
+- **PnP/Key Source State** — true when a PiP/Key channel is assigned to a specific source
+- **Aux Mute State** — true when an AUX channel is muted
+- **Aux Link Mode** — true when AUX link mode matches the selected setting (Off / Auto Link / Manual Link)
+- **Aux Link State** — true when an AUX channel is linked to PGM
+- **Output Assign State** — true when an output (HDMI 1–3, SDI 1–3, USB) is assigned to a specific source
+- **Freeze State** — true when global freeze is on
+- **Freeze Type: Select** — true when Freeze Type is set to Select (not All)
+- **Freeze Select: Input Active** — true when a specific input (HDMI 1–8, SDI 1–8) is enabled in Freeze Select mode
+- **Freeze Select Mode Active** — true when the dual-function Set Freeze modifier is active
+- **Memory Slot: Last Loaded** — true when the given slot (1–30) was the last one recalled
+- **Transition Type Active** — true when Mix or Wipe is the active transition type
+- **Mix Type Active** — true when the selected mix type is active
+- **Wipe Type Active** — true when the selected wipe type is active
+- **Wipe Direction Active** — true when the selected wipe direction is active
+- **Snapshot File Exists** — true when a named snapshot file is present on disk
+
+> Feedbacks that depend on polled state (bus tally, aux mute, output assign, freeze, memory) require polling to be enabled.
 
 ## Variables
 
@@ -88,8 +110,8 @@ The module exposes variables for all polled state. Key variables include:
 - `aux1link`, `aux2link`, `aux3link` — AUX link state
 - `hdmi1`, `hdmi2`, `hdmi3`, `sdi1`, `sdi2`, `sdi3`, `usb` — output assignments
 - `pnpkey1_source`–`pnpkey4_source` — PiP/Key source label (human-readable name, requires polling)
-- `memoryname_1`–`memoryname_30` — memory slot names (populated during polling, ~15 s at 500 ms rate)
-- `lastmemorynumber`, `lastmemoryname` — last recalled memory slot
+- `memoryname_1`–`memoryname_30` — memory slot names (one slot updated per medium poll tick ≈ full 30-slot refresh every 30 s at 500 ms rate)
+- `lastmemorynumber`, `lastmemoryname` — last recalled memory slot number (1–30) and its name
 - `freeze` — freeze state
 - `auxlink_mode` — AUX link mode
 
@@ -101,20 +123,28 @@ The module exposes variables for all polled state. Key variables include:
 
 All preset buttons use the Companion 5 layered graphics system with fixed font size (no shrink-to-fit).
 
-- PGM / PVW source selection (HDMI, SDI, Still, XPT inputs) — with tally feedback
-- AUX 1–3 source selection — with tally feedback
-- PiP 1–4:
+- **PGM / PVW source selection** (HDMI, SDI, Still, XPT inputs) — with bus tally feedback
+- **AUX 1–3 source selection** — with bus tally feedback
+- **PGM + AUX source buttons** — combined preset showing PGM tally plus three coloured squares for AUX 1–3; numbered labels appear on each square only when that AUX is active on the source
+- **Memory slots 1–30** — auto-labelled with the slot name polled from the device; `memory_active` feedback highlights the last-loaded slot
+- **Freeze:**
+  - Global Freeze On / Off toggle
+  - Freeze Type toggle (All / Select)
+  - Set Freeze mode — dual-function modifier; hold to enter Set Freeze mode, tap an input button to toggle that input's freeze select state
+  - Per-input Freeze Select buttons (HDMI 1–8, SDI 1–8) — highlighted when selected
+- **Transition:** Type (Mix / Wipe), Mix Type, Wipe Type, Wipe Direction
+- **PiP 1–4:**
   - Capture / Apply
   - Source selection (HDMI 1–8, SDI 1–8, Input 1–10)
   - Type (PinP / Luminance-White Key / Luminance-Black Key / Chroma Key)
   - Shape (Rectangle / Circle / Diamond)
   - Border Color (10 options)
-- DSK 1–2:
+- **DSK 1–2:**
   - Capture / Apply
   - Key Source selection (HDMI 1–8, SDI 1–8, Still 1–16)
   - Fill Source selection (HDMI 1–8, SDI 1–8, Still 1–16)
   - Type (Luminance-White Key / Luminance-Black Key / Chroma Key)
-- Snapshots (5 slots: snapshot1–snapshot5):
+- **Snapshots** (5 slots: snapshot1–snapshot5):
   - **Save** — dim when slot is empty, bright orange when occupied
   - **Clear** — dim when slot is empty, bright red when occupied; deletes the file
   - **Load + Apply to PiP 1–4** (5 slots each)

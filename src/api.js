@@ -1,4 +1,5 @@
 const { InstanceStatus, TCPHelper } = require('@companion-module/base')
+const { extractMessages } = require('./tcpParser')
 
 module.exports = {
 	initConnection: function () {
@@ -16,7 +17,13 @@ module.exports = {
 		if (self.config.host) {
 			self.log('info', `Opening connection to ${self.config.host}:${self.config.port}`)
 
-			self.socket = new TCPHelper(self.config.host, self.config.port)
+			self.tcpBuffer = ''
+			self._passwordSent = false
+
+			self.socket = new TCPHelper(self.config.host, self.config.port, {
+				reconnect: true,
+				reconnect_interval: 30000,
+			})
 
 			self.socket.on('error', function (err) {
 				if (self.config.verbose) {
@@ -24,87 +31,26 @@ module.exports = {
 				}
 
 				clearInterval(self.INTERVAL)
-				self.handleError(err)
+				self.updateStatus(InstanceStatus.ConnectionFailure, 'Connection error')
 			})
 
 			self.socket.on('connect', function () {
+				self.tcpBuffer = ''
+				self._passwordSent = false
 				self.log('info', 'Connected')
 				self.updateStatus(InstanceStatus.Ok)
 			})
 
 			self.socket.on('data', function (buffer) {
-				let indata = buffer.toString('utf8')
-
-				//update feedbacks and variables
-				self.updateData(indata)
-			})
-		}
-	},
-
-	handleError: function (err) {
-		let self = this
-
-		try {
-			let error = err.toString()
-			let printedError = false
-
-			Object.keys(err).forEach(function (key) {
-				if (key === 'code') {
-					if (err[key] === 'ECONNREFUSED') {
-						error =
-							'Unable to communicate with Device. Connection refused. Is this the right IP address? Is it still online?'
-						self.log('error', error)
-						self.updateStatus(InstanceStatus.ConnectionFailure, 'Connection Refused')
-						printedError = true
-						if (self.socket !== undefined) {
-							self.socket.destroy()
-						}
-						self.startReconnectInterval()
-					} else if (err[key] === 'ETIMEDOUT') {
-						error =
-							'Unable to communicate with Device. Connection timed out. Is this the right IP address? Is it still online?'
-						self.log('error', error)
-						self.updateStatus(InstanceStatus.ConnectionFailure, 'Connection Timed Out')
-						printedError = true
-						if (self.socket !== undefined) {
-							self.socket.destroy()
-						}
-						self.startReconnectInterval()
-					} else if (err[key] === 'ECONNRESET') {
-						error = 'The connection was reset. Check the log for more error information.'
-						self.log('error', error)
-						self.updateStatus(InstanceStatus.ConnectionFailure, 'Connection Reset')
-						printedError = true
-						if (self.socket !== undefined) {
-							self.socket.destroy()
-						}
-						self.startReconnectInterval()
-					}
+				self.tcpBuffer += buffer.toString('utf8')
+				const { messages, remaining } = extractMessages(self.tcpBuffer)
+				self.tcpBuffer = remaining
+				for (const msg of messages) {
+					self.updateData(msg)
 				}
 			})
 
-			if (!printedError) {
-				self.log('error', `Error: ${error}`)
-			}
-		} catch (error) {
-			self.log('error', 'Error handling error: ' + error)
-			self.log('error', 'Error: ' + String(err))
 		}
-	},
-
-	startReconnectInterval: function () {
-		let self = this
-
-		self.updateStatus(InstanceStatus.ConnectionFailure, 'Reconnecting')
-
-		if (self.RECONNECT_INTERVAL !== undefined) {
-			clearInterval(self.RECONNECT_INTERVAL)
-			self.RECONNECT_INTERVAL = undefined
-		}
-
-		self.log('info', 'Attempting to reconnect in 30 seconds...')
-
-		self.RECONNECT_INTERVAL = setTimeout(self.initConnection.bind(this), 30000)
 	},
 
 	startInterval: function () {
@@ -238,8 +184,13 @@ module.exports = {
 		}
 
 		if (data.trim() == 'Enter password:') {
+			if (self._passwordSent) {
+				self.log('error', 'Login rejected by device — check password or wait before reconnecting')
+				return
+			}
+			self._passwordSent = true
 			self.updateStatus(InstanceStatus.Connecting, 'Authenticating')
-			self.log('info', 'Sending passcode: ' + self.config.password)
+			self.log('info', 'Sending passcode')
 			self.socket.send(self.config.password + '\n')
 		} else if (data.trim() == 'Welcome to V-160HD.') {
 			self.updateStatus(InstanceStatus.Ok)
@@ -247,266 +198,263 @@ module.exports = {
 			self.sendRawCommand('VER') //request version info
 			self.startInterval() //request some states
 			self.subscribeToTally() //request tally changes
-		} else if (data.trim() == 'ERR:0;') {
+		} else if (data.trim() == 'Authentication error.') {
+			self._passwordSent = false
+			self.log('warn', 'Authentication error — wrong password or device busy')
+		} else if (data.trim() == 'Wait a moment.') {
+			self.log('info', 'Device busy — waiting before reconnect')
+		} else if (data.trim() == 'ERR:0') {
 			//an error with something that it received
 		} else {
 			//do stuff with the data
 			try {
-				if (data.indexOf(';')) {
-					let dataGroups = data.trim().split(';')
+				const msg = data.trim()
+				if (msg && msg !== 'ACK') {
+					let dataSet = msg.split(':')
+					if (Array.isArray(dataSet)) {
+						let dataPrefix = ''
 
-					for (let j = 0; j < dataGroups.length; j++) {
-						dataGroups[j] = dataGroups[j].trim()
-						if (dataGroups[j] !== 'ACK' && dataGroups[j] !== '') {
-							let dataSet = dataGroups[j].trim().split(':')
-							if (Array.isArray(dataSet)) {
-								let dataPrefix = ''
+						if (dataSet[0] !== undefined) {
+							dataPrefix = dataSet[0].toString().trim()
+						}
 
-								if (dataSet[0] !== undefined) {
-									dataPrefix = dataSet[0].toString().trim()
+						let dataSuffix = ''
+
+						if (dataSet.length > 1) {
+							if (dataSet[1].toString().indexOf(',')) {
+								dataSuffix = dataSet[1].toString().split(',')
+
+								if (dataPrefix.indexOf('VER') > -1) {
+									self.MODEL = dataSuffix[0].toString()
+									self.VERSION = dataSuffix[1].toString()
 								}
 
-								let dataSuffix = ''
+								if (dataPrefix.indexOf('DTH') > -1) {
+									if (dataSuffix[0].length === 6) {
+										let params = dataSuffix[0]
+										let param1 = params[0] + params[1]
+										let param2 = params[2] + params[3]
+										let param3 = params[4] + params[5]
 
-								if (dataSet.length > 1) {
-									if (dataSet[1].toString().indexOf(',')) {
-										dataSuffix = dataSet[1].toString().split(',')
+										let value = dataSuffix[1]
 
-										if (dataPrefix.indexOf('VER') > -1) {
-											self.MODEL = dataSuffix[0].toString()
-											self.VERSION = dataSuffix[1].toString()
+										/*if (param1 == '0C' && param2 == '00') { //tally message
+											self.updateTally(param3, value);
+										}*/
+
+										if (param1 == '0C' && param2 == '00' && param3 == '00') {
+											//subscribe tally message
+											self.logVerbose('Received Subscribe Tally Message')
+											let index = 0
+											let halfLength = value.length / 2
+											for (let t = 0; t < halfLength; t++) {
+												let input = halfLength - (halfLength - t)
+												input = input.toString(16).padStart(2, '0').toUpperCase()
+
+												let tallyState = value[index] + value[index + 1]
+												tallyState = tallyState.toString(16).padStart(2, '0').toUpperCase()
+
+												self.updateTally(input, tallyState)
+
+												index = index + 2
+											}
 										}
 
-										if (dataPrefix.indexOf('DTH') > -1) {
-											if (dataSuffix[0].length === 6) {
-												let params = dataSuffix[0]
-												let param1 = params[0] + params[1]
-												let param2 = params[2] + params[3]
-												let param3 = params[4] + params[5]
-
-												let value = dataSuffix[1]
-
-												/*if (param1 == '0C' && param2 == '00') { //tally message
-													self.updateTally(param3, value);
-												}*/
-
-												if (param1 == '0C' && param2 == '00' && param3 == '00') {
-													//subscribe tally message
-													self.logVerbose('Received Subscribe Tally Message')
-													let index = 0
-													let halfLength = value.length / 2
-													for (let t = 0; t < halfLength; t++) {
-														let input = halfLength - (halfLength - t)
-														input = input.toString(16).padStart(2, '0').toUpperCase()
-
-														let tallyState = value[index] + value[index + 1]
-														tallyState = tallyState.toString(16).padStart(2, '0').toUpperCase()
-
-														self.updateTally(input, tallyState)
-
-														index = index + 2
-													}
+										if (param1 == '00') {
+											if (param2 == '00' && param3 == '11') {
+												//aux 1 source
+												self.logVerbose('Received Aux 1 Source: ' + value)
+												self.DATA.aux1source = value
+											} else if (param2 == '00' && param3 == '2E') {
+												//aux 2 source
+												self.logVerbose('Received Aux 2 Source: ' + value)
+												self.DATA.aux2source = value
+											} else if (param2 == '00' && param3 == '2F') {
+												//aux 3 source
+												self.logVerbose('Received Aux 3 Source: ' + value)
+												self.DATA.aux3source = value
+											} else if (param2 == '1B' && param3 == '02') {
+												//pnp key 1 source
+												let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {
+													return item.id == value
+												})
+												self.DATA.pnpkey1source = value
+												self.logVerbose('Received PnP/Key 1 Source: ' + value)
+												if (lookup) {
+													self.DATA.pnpkey1sourcename = lookup.label
+													self.logVerbose('PnP/Key 1 Source Name: ' + lookup.label)
 												}
-
-												if (param1 == '00') {
-													if (param2 == '00' && param3 == '11') {
-														//aux 1 source
-														self.logVerbose('Received Aux 1 Source: ' + value)
-														self.DATA.aux1source = value
-													} else if (param2 == '00' && param3 == '2E') {
-														//aux 2 source
-														self.logVerbose('Received Aux 2 Source: ' + value)
-														self.DATA.aux2source = value
-													} else if (param2 == '00' && param3 == '2F') {
-														//aux 3 source
-														self.logVerbose('Received Aux 3 Source: ' + value)
-														self.DATA.aux3source = value
-													} else if (param2 == '1B' && param3 == '02') {
-														//pnp key 1 source
-														let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {
-															return item.id == value
-														})
-														self.DATA.pnpkey1source = value
-														self.logVerbose('Received PnP/Key 1 Source: ' + value)
-														if (lookup) {
-															self.DATA.pnpkey1sourcename = lookup.label
-															self.logVerbose('PnP/Key 1 Source Name: ' + lookup.label)
-														}
-													} else if (param2 == '1C' && param3 == '02') {
-														//pnp key 2 source
-														let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {
-															return item.id == value
-														})
-														self.DATA.pnpkey2source = value
-														self.logVerbose('Received PnP/Key 2 Source: ' + value)
-														if (lookup) {
-															self.DATA.pnpkey2sourcename = lookup.label
-															self.logVerbose('PnP/Key 2 Source Name: ' + lookup.label)
-														}
-													} else if (param2 == '1D' && param3 == '02') {
-														//pnp key 3 source
-														let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {
-															return item.id == value
-														})
-														self.DATA.pnpkey3source = value
-														self.logVerbose('Received PnP/Key 3 Source: ' + value)
-														if (lookup) {
-															self.DATA.pnpkey3sourcename = lookup.label
-															self.logVerbose('PnP/Key 3 Source Name: ' + lookup.label)
-														}
-													} else if (param2 == '1E' && param3 == '02') {
-														//pnp key 4 source
-														let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {
-															return item.id == value
-														})
-														self.DATA.pnpkey4source = value
-														self.logVerbose('Received PnP/Key 4 Source: ' + value)
-														if (lookup) {
-															self.DATA.pnpkey4sourcename = lookup.label
-															self.logVerbose('PnP/Key 4 Source Name: ' + lookup.label)
-														}
-													} else {
-														//other data
-														self.DATA[`data_${param1}${param2}${param3}`] = value //this should take care of all requested data
-														self.DATA[`data_${param2}${param3}`] = value //this should take care of all requested data
-													}
+											} else if (param2 == '1C' && param3 == '02') {
+												//pnp key 2 source
+												let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {
+													return item.id == value
+												})
+												self.DATA.pnpkey2source = value
+												self.logVerbose('Received PnP/Key 2 Source: ' + value)
+												if (lookup) {
+													self.DATA.pnpkey2sourcename = lookup.label
+													self.logVerbose('PnP/Key 2 Source Name: ' + lookup.label)
 												}
-
-												if (param1 == '02' && param2 == '05' && param3 == '00') {
-													//freeze state
-													self.DATA.freeze = value
-													self.logVerbose('Received Freeze State: ' + value)
+											} else if (param2 == '1D' && param3 == '02') {
+												//pnp key 3 source
+												let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {
+													return item.id == value
+												})
+												self.DATA.pnpkey3source = value
+												self.logVerbose('Received PnP/Key 3 Source: ' + value)
+												if (lookup) {
+													self.DATA.pnpkey3sourcename = lookup.label
+													self.logVerbose('PnP/Key 3 Source Name: ' + lookup.label)
 												}
-
-												if (param1 == '01' && param2 == '22' && param3 == '03') {
-													//aux 1 mute
-													self.DATA.aux1mute = value
-													self.logVerbose('Received Aux 1 Mute: ' + value)
+											} else if (param2 == '1E' && param3 == '02') {
+												//pnp key 4 source
+												let lookup = self.CHOICES_PNPKEY_SOURCES.find((item) => {
+													return item.id == value
+												})
+												self.DATA.pnpkey4source = value
+												self.logVerbose('Received PnP/Key 4 Source: ' + value)
+												if (lookup) {
+													self.DATA.pnpkey4sourcename = lookup.label
+													self.logVerbose('PnP/Key 4 Source Name: ' + lookup.label)
 												}
+											} else {
+												//other data
+												self.DATA[`data_${param1}${param2}${param3}`] = value //this should take care of all requested data
+												self.DATA[`data_${param2}${param3}`] = value //this should take care of all requested data
+											}
+										}
 
-												if (param1 == '01' && param2 == '25' && param3 == '03') {
-													//aux 2 mute
-													self.DATA.aux2mute = value
-													self.logVerbose('Received Aux 2 Mute: ' + value)
-												}
+										if (param1 == '02' && param2 == '05' && param3 == '00') {
+											//freeze state
+											self.DATA.freeze = value
+											self.logVerbose('Received Freeze State: ' + value)
+										}
 
-												if (param1 == '01' && param2 == '26' && param3 == '03') {
-													//aux 3 mute
-													self.DATA.aux3mute = value
-													self.logVerbose('Received Aux 3 Mute: ' + value)
-												}
+										if (param1 == '01' && param2 == '22' && param3 == '03') {
+											//aux 1 mute
+											self.DATA.aux1mute = value
+											self.logVerbose('Received Aux 1 Mute: ' + value)
+										}
 
-												if (param1 == '00' && param2 == '00' && param3 == '0A') {
-													//hdmi 1 output assign
-													self.DATA.hdmi1assign = value
-													self.logVerbose('Received HDMI 1 Output Assign: ' + value)
-												}
+										if (param1 == '01' && param2 == '25' && param3 == '03') {
+											//aux 2 mute
+											self.DATA.aux2mute = value
+											self.logVerbose('Received Aux 2 Mute: ' + value)
+										}
 
-												if (param1 == '00' && param2 == '00' && param3 == '0B') {
-													//hdmi 2 output assign
-													self.DATA.hdmi2assign = value
-													self.logVerbose('Received HDMI 2 Output Assign: ' + value)
-												}
+										if (param1 == '01' && param2 == '26' && param3 == '03') {
+											//aux 3 mute
+											self.DATA.aux3mute = value
+											self.logVerbose('Received Aux 3 Mute: ' + value)
+										}
 
-												if (param1 == '00' && param2 == '00' && param3 == '0C') {
-													//hdmi 3 output assign
-													self.DATA.hdmi3assign = value
-													self.logVerbose('Received HDMI 3 Output Assign: ' + value)
-												}
+										if (param1 == '00' && param2 == '00' && param3 == '0A') {
+											//hdmi 1 output assign
+											self.DATA.hdmi1assign = value
+											self.logVerbose('Received HDMI 1 Output Assign: ' + value)
+										}
 
-												if (param1 == '00' && param2 == '00' && param3 == '0D') {
-													//sdi 1 output assign
-													self.DATA.sdi1assign = value
-													self.logVerbose('Received SDI 1 Output Assign: ' + value)
-												}
+										if (param1 == '00' && param2 == '00' && param3 == '0B') {
+											//hdmi 2 output assign
+											self.DATA.hdmi2assign = value
+											self.logVerbose('Received HDMI 2 Output Assign: ' + value)
+										}
 
-												if (param1 == '00' && param2 == '00' && param3 == '0E') {
-													//sdi 2 output assign
-													self.DATA.sdi2assign = value
-													self.logVerbose('Received SDI 2 Output Assign: ' + value)
-												}
+										if (param1 == '00' && param2 == '00' && param3 == '0C') {
+											//hdmi 3 output assign
+											self.DATA.hdmi3assign = value
+											self.logVerbose('Received HDMI 3 Output Assign: ' + value)
+										}
 
-												if (param1 == '00' && param2 == '00' && param3 == '0F') {
-													//sdi 3 output assign
-													self.DATA.sdi3assign = value
-													self.logVerbose('Received SDI 3 Output Assign: ' + value)
-												}
+										if (param1 == '00' && param2 == '00' && param3 == '0D') {
+											//sdi 1 output assign
+											self.DATA.sdi1assign = value
+											self.logVerbose('Received SDI 1 Output Assign: ' + value)
+										}
 
-												if (param1 == '00' && param2 == '00' && param3 == '10') {
-													//usb output assign
-													self.DATA.usbassign = value
-													self.logVerbose('Received USB Output Assign: ' + value)
-												}
+										if (param1 == '00' && param2 == '00' && param3 == '0E') {
+											//sdi 2 output assign
+											self.DATA.sdi2assign = value
+											self.logVerbose('Received SDI 2 Output Assign: ' + value)
+										}
 
-												if (param1 == '02' && param2 == '01' && param3 == '0D') {
-													//aux link mode
-													self.DATA.auxlinkmode = value
-													self.logVerbose('Received Aux Link Mode: ' + value)
-												}
+										if (param1 == '00' && param2 == '00' && param3 == '0F') {
+											//sdi 3 output assign
+											self.DATA.sdi3assign = value
+											self.logVerbose('Received SDI 3 Output Assign: ' + value)
+										}
 
-												if (param1 == '02' && param2 == '01' && param3 == '54') {
-													//aux 1 link
-													self.DATA.aux1link = value
-													self.logVerbose('Received Aux 1 Link: ' + value)
-												}
+										if (param1 == '00' && param2 == '00' && param3 == '10') {
+											//usb output assign
+											self.DATA.usbassign = value
+											self.logVerbose('Received USB Output Assign: ' + value)
+										}
 
-												if (param1 == '02' && param2 == '01' && param3 == '55') {
-													//aux 2 link
-													self.DATA.aux2link = value
-													self.logVerbose('Received Aux 2 Link: ' + value)
-												}
+										if (param1 == '02' && param2 == '01' && param3 == '0D') {
+											//aux link mode
+											self.DATA.auxlinkmode = value
+											self.logVerbose('Received Aux Link Mode: ' + value)
+										}
 
-												if (param1 == '02' && param2 == '01' && param3 == '56') {
-													//aux 3 link
-													self.DATA.aux3link = value
-													self.logVerbose('Received Aux 3 Link: ' + value)
-												}
+										if (param1 == '02' && param2 == '01' && param3 == '54') {
+											//aux 1 link
+											self.DATA.aux1link = value
+											self.logVerbose('Received Aux 1 Link: ' + value)
+										}
 
-												if (param1 == '60') {
-													//memory names
-													let memoryNumber = parseInt(param2, 16)
-													let memoryCharIndex = parseInt(param3, 16)
+										if (param1 == '02' && param2 == '01' && param3 == '55') {
+											//aux 2 link
+											self.DATA.aux2link = value
+											self.logVerbose('Received Aux 2 Link: ' + value)
+										}
 
-													//there are 8 characters in each memory name and they will all come in as individual messages
-													//and not necessarily in order
-													let memoryName = self.DATA[`memory${memoryNumber}`]
-													if (memoryName === undefined) {
-														memoryName = ''
-													}
+										if (param1 == '02' && param2 == '01' && param3 == '56') {
+											//aux 3 link
+											self.DATA.aux3link = value
+											self.logVerbose('Received Aux 3 Link: ' + value)
+										}
 
-													//value is the character, put it in the correct spot in the memory name based on the memoryCharIndex
-													memoryName =
-														memoryName.substring(0, memoryCharIndex * 2) +
-														value +
-														memoryName.substring(memoryCharIndex * 2 + 1) //replace the character at the index
+										if (param1 == '60') {
+											//memory names
+											let memoryNumber = parseInt(param2, 16)
+											let memoryCharIndex = parseInt(param3, 16)
 
-													self.DATA[`memory${memoryNumber}`] = memoryName
-													let variableObj = {}
-													variableObj[`memoryname_${memoryNumber + 1}`] = memoryName
-													self.setVariableValues(variableObj)
-												}
+											//there are 8 characters in each memory name and they will all come in as individual messages
+											//and not necessarily in order
+											let memoryName = self.DATA[`memory${memoryNumber}`]
+											if (memoryName === undefined) {
+												memoryName = ''
+											}
 
-												if (param1 == '0A') {
-													//memory functions
-													if (param2 == '00' && param3 == '03') {
-														//last memory loaded
-														self.DATA.lastMemory = parseInt(value, 16)
+											//value is the character, put it in the correct spot in the memory name based on the memoryCharIndex
+											memoryName =
+												memoryName.substring(0, memoryCharIndex * 2) +
+												value +
+												memoryName.substring(memoryCharIndex * 2 + 1) //replace the character at the index
 
-														//get the memory name based on the last memory loaded
-														let memoryName = self.DATA[`memory${self.DATA.lastMemory}`]
+											self.DATA[`memory${memoryNumber}`] = memoryName
+											let variableObj = {}
+											variableObj[`memoryname_${memoryNumber + 1}`] = memoryName
+											self.setVariableValues(variableObj)
+										}
 
-														//update variables
-														let variableObj = {}
-														variableObj['lastmemorynumber'] = self.DATA.lastMemory
-														variableObj['lastmemoryname'] = memoryName
-														self.setVariableValues(variableObj)
-													}
-												}
+										if (param1 == '0A') {
+											//memory functions
+											if (param2 == '00' && param3 == '03') {
+												//last memory loaded
+												self.DATA.lastMemory = parseInt(value, 16)
+
+												//get the memory name based on the last memory loaded
+												let memoryName = self.DATA[`memory${self.DATA.lastMemory}`]
+
+												//update variables
+												let variableObj = {}
+												variableObj['lastmemorynumber'] = self.DATA.lastMemory
+												variableObj['lastmemoryname'] = memoryName
+												self.setVariableValues(variableObj)
 											}
 										}
 									}
-								} else {
-									//likely just ERR:0;
 								}
 							}
 						}
